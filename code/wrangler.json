@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "inntag-site",
+  "main": "./src/worker/index.ts",
+  "compatibility_date": "2025-06-17",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true,
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "www.inntag.com.br", "custom_domain": true },
+    { "pattern": "inntag.com.br", "custom_domain": true }
+  ],
+  "assets": {
+    "directory": "./dist/client",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "inntag-site-db",
+      "database_id": "a486f002-5650-4bde-a3a8-ef1a7995e310"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "inntag-site-assets"
+    }
+  ]
+}

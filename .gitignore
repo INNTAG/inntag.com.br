@@ -1,0 +1,26 @@
+# Segredos e dados sensíveis — NUNCA versionar
+.env
+.dev.vars
+*.env
+d1_dump.sql
+users.json
+public_asset_links.json
+
+# Dependências e artefatos de build
+code/node_modules/
+node_modules/
+code/dist/
+dist/
+code/.wrangler/
+.wrangler/
+
+# Tipos gerados pelo wrangler
+code/worker-configuration.d.ts
+worker-configuration.d.ts
+
+# Scripts locais de migração (one-off)
+migrate_assets.sh
+
+# Logs e temporários
+*.log
+.DS_Store
