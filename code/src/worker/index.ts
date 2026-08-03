@@ -4,8 +4,7 @@ import { getCookie, setCookie } from "hono/cookie";
 
 const app = new Hono<{ Bindings: Env }>();
 
-// Cabeçalhos de segurança em todas as respostas do worker (o HTML/assets estáticos
-// recebem os mesmos via arquivo public/_headers).
+// Cabeçalhos de segurança em todas as respostas do worker.
 app.use("*", async (c, next) => {
   await next();
   c.header("X-Content-Type-Options", "nosniff");
