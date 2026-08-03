@@ -38,7 +38,7 @@ export default function CookieConsent() {
         <p className="text-sm leading-relaxed text-neutral-300">
           Usamos cookies para melhorar sua experiência e analisar o tráfego do site. Ao continuar,
           você concorda com o uso de cookies não essenciais, conforme a{' '}
-          <a href="/contato" className="text-red-400 underline underline-offset-2 hover:text-red-300">
+          <a href="/privacidade" className="text-red-400 underline underline-offset-2 hover:text-red-300">
             nossa política de privacidade
           </a>{' '}
           (LGPD).

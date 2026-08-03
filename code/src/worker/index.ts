@@ -68,6 +68,20 @@ app.post("/api/admin/login", async (c) => {
     return c.json({ error: "Senha é obrigatória" }, 400);
   }
 
+  // Rate-limit por IP (anti brute-force) — limita tentativas falhas por minuto.
+  const ip = c.req.header("CF-Connecting-IP") || c.req.header("X-Forwarded-For") || "unknown";
+  const recent = await c.env.DB.prepare(
+    "SELECT COUNT(*) as n FROM admin_login_attempts WHERE ip_address = ? AND is_successful = 0 AND attempted_at > datetime('now','-1 minute')"
+  ).bind(ip).first() as { n: number } | null;
+  if (recent && recent.n >= 10) {
+    return c.json({ error: "Muitas tentativas deste dispositivo. Aguarde 1 minuto." }, 429);
+  }
+  const recordFail = async () => {
+    try {
+      await c.env.DB.prepare("INSERT INTO admin_login_attempts (ip_address, is_successful) VALUES (?, 0)").bind(ip).run();
+    } catch { /* tabela ausente — ignora */ }
+  };
+
   // If email/username is provided, check admin_users table
   if (email) {
     // Check by email OR by name (username)
@@ -76,10 +90,12 @@ app.post("/api/admin/login", async (c) => {
     ).bind(email, email).first() as { id: number; email: string; name: string; password_hash: string; permissions: string } | null;
     
     if (!admin) {
+      await recordFail();
       return c.json({ error: "Usuário não encontrado" }, 401);
     }
-    
+
     if (!admin.password_hash || admin.password_hash !== password) {
+      await recordFail();
       return c.json({ error: "Senha inválida" }, 401);
     }
     
@@ -106,6 +122,7 @@ app.post("/api/admin/login", async (c) => {
   
   const adminPassword = setting?.setting_value;
   if (!adminPassword || password !== adminPassword) {
+    await recordFail();
     return c.json({ error: "Senha inválida" }, 401);
   }
 

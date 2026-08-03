@@ -82,7 +82,7 @@ export default function Home() {
         <div className="relative z-10 w-full max-w-[1400px] mx-auto px-8 md:px-12 lg:px-20 pb-48 md:pb-32">
           <div className="max-w-3xl">
             {/* Accent Tag */}
-            <div className="inline-flex items-center gap-3 mb-8 reveal-item opacity-0 translate-y-8 transition-all duration-700">
+            <div className="inline-flex items-center gap-3 mb-8 hero-reveal" style={{ animationDelay: '0ms' }}>
               <div className="w-8 h-px bg-red-500" />
               <span className="text-red-400 text-sm font-medium tracking-[0.15em] uppercase">
                 Grupo INNTAG
@@ -90,7 +90,7 @@ export default function Home() {
             </div>
 
             {/* Main Headline */}
-            <h1 className="reveal-item opacity-0 translate-y-8 transition-all duration-700 delay-100">
+            <h1 className="hero-reveal" style={{ animationDelay: '100ms' }}>
               <span className="block text-[clamp(2.5rem,6vw,5rem)] font-bold text-white leading-[1.05] tracking-[-0.02em]">
                 {language === 'pt' ? 'Engenharia Elétrica' : t('hero.title').split(' ').slice(0, -2).join(' ')}
               </span>
@@ -100,12 +100,12 @@ export default function Home() {
             </h1>
 
             {/* Subtitle */}
-            <p className="text-white text-lg md:text-xl max-w-xl mt-8 leading-relaxed reveal-item opacity-0 translate-y-8 transition-all duration-700 delay-200">
+            <p className="text-white text-lg md:text-xl max-w-xl mt-8 leading-relaxed hero-reveal" style={{ animationDelay: '200ms' }}>
               {t('hero.subtitle')}
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4 mt-12 reveal-item opacity-0 translate-y-8 transition-all duration-700 delay-300">
+            <div className="flex flex-col sm:flex-row gap-4 mt-12 hero-reveal" style={{ animationDelay: '300ms' }}>
               <Link to="/contato" className="group inline-flex items-center justify-center gap-3 bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-4 rounded-full font-semibold hover:shadow-lg hover:shadow-orange-500/25 transition-all duration-300">
                 {t('hero.cta')}
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
@@ -122,8 +122,8 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black/30 backdrop-blur-sm">
           <div className="max-w-[1400px] mx-auto px-6 md:px-12 lg:px-20 py-6 md:py-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 md:gap-8 md:gap-12">
-              {translatedStats.map((stat, i) => <div key={i} className="reveal-item opacity-0 translate-y-4 transition-all duration-500" style={{
-              transitionDelay: `${400 + i * 100}ms`
+              {translatedStats.map((stat, i) => <div key={i} className="hero-reveal" style={{
+              animationDelay: `${400 + i * 100}ms`
             }}>
                   <div className="text-2xl md:text-4xl font-bold text-white tracking-tight">{stat.value}</div>
                   <div className="text-white/80 text-xs md:text-sm mt-1 font-medium">{stat.label}</div>
@@ -760,6 +760,15 @@ export default function Home() {
         .revealed {
           opacity: 1 !important;
           transform: translateY(0) translateX(0) !important;
+        }
+        /* Hero da 1ª dobra: aparece imediatamente via CSS (não espera o JS), melhora o LCP */
+        @keyframes heroReveal {
+          from { opacity: 0; transform: translateY(1.5rem); }
+          to   { opacity: 1; transform: none; }
+        }
+        .hero-reveal { opacity: 0; animation: heroReveal .8s cubic-bezier(.2,.7,.2,1) forwards; }
+        @media (prefers-reduced-motion: reduce) {
+          .hero-reveal { animation: none; opacity: 1; }
         }
       `}</style>
     </div>;

@@ -1,50 +1,66 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router";
+import { lazy, Suspense } from "react";
 import { LanguageProvider } from "@/react-app/contexts/LanguageContext";
 import WhatsAppButton from "@/react-app/components/WhatsAppButton";
 import CookieConsent from "@/react-app/components/CookieConsent";
 import HomePage from "@/react-app/pages/Home";
-import ProdutosPage from "@/react-app/pages/Produtos";
-import ServicosPage from "@/react-app/pages/Servicos";
-import MaquinasPage from "@/react-app/pages/Maquinas";
-import ClientesPage from "@/react-app/pages/Clientes";
-import PortfolioPage from "@/react-app/pages/Portfolio";
-import ContatoPage from "@/react-app/pages/Contato";
-import Portal from "@/react-app/pages/Portal";
-import ConfigLogin from "@/react-app/pages/config/ConfigLogin";
 import ConfigLayout from "@/react-app/pages/config/ConfigLayout";
-import ConfigDashboard from "@/react-app/pages/config/ConfigDashboard";
-import ConfigProdutos from "@/react-app/pages/config/ConfigProdutos";
-import ConfigProjetos from "@/react-app/pages/config/ConfigProjetos";
-import ConfigClientes from "@/react-app/pages/config/ConfigClientes";
-import ConfigConteudo from "@/react-app/pages/config/ConfigConteudo";
-import ConfigUsuarios from "@/react-app/pages/config/ConfigUsuarios";
-import ConfigSeguranca from "@/react-app/pages/config/ConfigSeguranca";
-import ConfigMaquinas from "@/react-app/pages/config/ConfigMaquinas";
-import ConfigDestaques from "@/react-app/pages/config/ConfigDestaques";
-import ConfigServicos from "@/react-app/pages/config/ConfigServicos";
-import ConfigLandingPages from "@/react-app/pages/config/ConfigLandingPages";
-import ConfigSEO from "@/react-app/pages/config/ConfigSEO";
-import ConfigEmpresas from "@/react-app/pages/config/ConfigEmpresas";
-import ConfigBackgrounds from "@/react-app/pages/config/ConfigBackgrounds";
-import ConfigTimeline from "@/react-app/pages/config/ConfigTimeline";
-import ConfigNormas from "@/react-app/pages/config/ConfigNormas";
-import ConfigSocial from "@/react-app/pages/config/ConfigSocial";
-import ConfigUnifilar from "@/react-app/pages/config/ConfigUnifilar";
-import ProjetoFullScreen from "@/react-app/pages/config/ProjetoFullScreen";
-import PainelDetail from "@/react-app/pages/config/PainelDetail";
-import ServicoDetail from "@/react-app/pages/config/ServicoDetail";
-import Destaques from "@/react-app/pages/Destaques";
-import LandingPage from "@/react-app/pages/LandingPage";
-import SEOTermPage from "@/react-app/pages/SEOTermPage";
-import Unifilar from "@/react-app/pages/Unifilar";
+
+// Páginas públicas (carregadas sob demanda — reduz o bundle inicial)
+const ProdutosPage = lazy(() => import("@/react-app/pages/Produtos"));
+const ServicosPage = lazy(() => import("@/react-app/pages/Servicos"));
+const MaquinasPage = lazy(() => import("@/react-app/pages/Maquinas"));
+const ClientesPage = lazy(() => import("@/react-app/pages/Clientes"));
+const PortfolioPage = lazy(() => import("@/react-app/pages/Portfolio"));
+const ContatoPage = lazy(() => import("@/react-app/pages/Contato"));
+const Portal = lazy(() => import("@/react-app/pages/Portal"));
+const Destaques = lazy(() => import("@/react-app/pages/Destaques"));
+const LandingPage = lazy(() => import("@/react-app/pages/LandingPage"));
+const SEOTermPage = lazy(() => import("@/react-app/pages/SEOTermPage"));
+const Unifilar = lazy(() => import("@/react-app/pages/Unifilar"));
+const Privacidade = lazy(() => import("@/react-app/pages/Privacidade"));
+
+// Área administrativa (só carrega quando o admin acessa)
+const ConfigLogin = lazy(() => import("@/react-app/pages/config/ConfigLogin"));
+const ConfigDashboard = lazy(() => import("@/react-app/pages/config/ConfigDashboard"));
+const ConfigProdutos = lazy(() => import("@/react-app/pages/config/ConfigProdutos"));
+const ConfigProjetos = lazy(() => import("@/react-app/pages/config/ConfigProjetos"));
+const ConfigClientes = lazy(() => import("@/react-app/pages/config/ConfigClientes"));
+const ConfigConteudo = lazy(() => import("@/react-app/pages/config/ConfigConteudo"));
+const ConfigUsuarios = lazy(() => import("@/react-app/pages/config/ConfigUsuarios"));
+const ConfigSeguranca = lazy(() => import("@/react-app/pages/config/ConfigSeguranca"));
+const ConfigMaquinas = lazy(() => import("@/react-app/pages/config/ConfigMaquinas"));
+const ConfigDestaques = lazy(() => import("@/react-app/pages/config/ConfigDestaques"));
+const ConfigServicos = lazy(() => import("@/react-app/pages/config/ConfigServicos"));
+const ConfigLandingPages = lazy(() => import("@/react-app/pages/config/ConfigLandingPages"));
+const ConfigSEO = lazy(() => import("@/react-app/pages/config/ConfigSEO"));
+const ConfigEmpresas = lazy(() => import("@/react-app/pages/config/ConfigEmpresas"));
+const ConfigBackgrounds = lazy(() => import("@/react-app/pages/config/ConfigBackgrounds"));
+const ConfigTimeline = lazy(() => import("@/react-app/pages/config/ConfigTimeline"));
+const ConfigNormas = lazy(() => import("@/react-app/pages/config/ConfigNormas"));
+const ConfigSocial = lazy(() => import("@/react-app/pages/config/ConfigSocial"));
+const ConfigUnifilar = lazy(() => import("@/react-app/pages/config/ConfigUnifilar"));
+const ProjetoFullScreen = lazy(() => import("@/react-app/pages/config/ProjetoFullScreen"));
+const PainelDetail = lazy(() => import("@/react-app/pages/config/PainelDetail"));
+const ServicoDetail = lazy(() => import("@/react-app/pages/config/ServicoDetail"));
+
+function PageFallback() {
+  return (
+    <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: 28, height: 28, border: "3px solid rgba(120,120,120,.25)", borderTopColor: "#e0432a", borderRadius: "50%", animation: "spin .8s linear infinite" }} />
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
 
 function AppContent() {
   const location = useLocation();
   const isConfigPage = location.pathname.startsWith('/config');
-  
+
   return (
     <>
-      <Routes>
+      <Suspense fallback={<PageFallback />}>
+        <Routes>
           {/* Public routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/produtos" element={<ProdutosPage />} />
@@ -62,7 +78,8 @@ function AppContent() {
           <Route path="/lp/:slug" element={<LandingPage />} />
           <Route path="/termo/:category/:slug" element={<SEOTermPage />} />
           <Route path="/unifilar" element={<Unifilar />} />
-          
+          <Route path="/privacidade" element={<Privacidade />} />
+
           {/* Admin config */}
           <Route path="/config" element={<ConfigLogin />} />
           <Route path="/config/dashboard" element={<ConfigLayout><ConfigDashboard /></ConfigLayout>} />
@@ -87,6 +104,7 @@ function AppContent() {
           <Route path="/config/painel/:panelId" element={<PainelDetail />} />
           <Route path="/config/servico/:serviceId" element={<ServicoDetail />} />
         </Routes>
+      </Suspense>
       {/* WhatsApp floating button - only on public pages */}
       {!isConfigPage && <WhatsAppButton />}
       {!isConfigPage && <CookieConsent />}
