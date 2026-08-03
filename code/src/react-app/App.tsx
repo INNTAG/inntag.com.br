@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router";
 import { LanguageProvider } from "@/react-app/contexts/LanguageContext";
 import WhatsAppButton from "@/react-app/components/WhatsAppButton";
+import CookieConsent from "@/react-app/components/CookieConsent";
 import HomePage from "@/react-app/pages/Home";
 import ProdutosPage from "@/react-app/pages/Produtos";
 import ServicosPage from "@/react-app/pages/Servicos";
@@ -88,6 +89,7 @@ function AppContent() {
         </Routes>
       {/* WhatsApp floating button - only on public pages */}
       {!isConfigPage && <WhatsAppButton />}
+      {!isConfigPage && <CookieConsent />}
     </>
   );
 }

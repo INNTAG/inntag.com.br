@@ -4,6 +4,17 @@ import { getCookie, setCookie } from "hono/cookie";
 
 const app = new Hono<{ Bindings: Env }>();
 
+// Cabeçalhos de segurança em todas as respostas do worker (o HTML/assets estáticos
+// recebem os mesmos via arquivo public/_headers).
+app.use("*", async (c, next) => {
+  await next();
+  c.header("X-Content-Type-Options", "nosniff");
+  c.header("X-Frame-Options", "SAMEORIGIN");
+  c.header("Referrer-Policy", "strict-origin-when-cross-origin");
+  c.header("Strict-Transport-Security", "max-age=15552000");
+  c.header("Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=()");
+});
+
 // Apex -> www: o site canônico é https://www.inntag.com.br (evita conteúdo duplicado / SEO).
 app.use("*", async (c, next) => {
   const url = new URL(c.req.url);
@@ -212,17 +223,13 @@ const adminMiddleware = async (c: any, next: any) => {
 
 // Get all admin users
 app.get("/api/admin/users", adminMiddleware, async (c) => {
+  // Nunca devolver a senha ao cliente — apenas um booleano indicando se há senha definida.
   const { results } = await c.env.DB.prepare(
-    "SELECT id, user_id, email, name, role, permissions, is_active, created_at, updated_at, password_hash FROM admin_users ORDER BY created_at DESC"
+    `SELECT id, user_id, email, name, role, permissions, is_active, created_at, updated_at,
+            (password_hash IS NOT NULL AND length(password_hash) > 0) AS has_password
+     FROM admin_users ORDER BY created_at DESC`
   ).all();
-  // Return saved password for master admin to see
-  const users = (results || []).map((user: any) => ({
-    ...user,
-    saved_password: user.password_hash || null,
-    has_password: !!user.password_hash && user.password_hash.length > 0,
-    password_hash: undefined
-  }));
-  return c.json(users);
+  return c.json(results || []);
 });
 
 // Create admin user manually
