@@ -13,7 +13,7 @@ const SERVICOS = [
     subtitle: 'Programa de manutenção programada',
     shortDesc: 'Garantimos a máxima disponibilidade dos seus ativos elétricos com programas de manutenção estruturados.',
     description: 'Programa estruturado de manutenção preventiva que garante a disponibilidade dos seus ativos elétricos e previne paradas não programadas. Nossa metodologia baseada em análise preditiva identifica problemas antes que se tornem falhas críticas.',
-    image: ASSETS.servicesMaintenance,
+    image: '/api/files/real-disjuntor-abw.jpg',
     features: [
       'Análise termográfica de painéis e conexões',
       'Testes de isolamento e continuidade',
@@ -34,7 +34,7 @@ const SERVICOS = [
     subtitle: 'Atendimento emergencial rápido',
     shortDesc: 'Equipe de plantão disponível para atendimento de emergências com resposta rápida.',
     description: 'Equipe de plantão para atendimento de emergências. Nossa estrutura permite resposta rápida e diagnóstico preciso, minimizando o tempo de parada e os prejuízos operacionais.',
-    image: ASSETS.servicesMaintenance,
+    image: '/api/files/real-barramentos-fabrica.jpg',
     features: [
       'Plantão técnico dedicado',
       'Diagnóstico remoto inicial',
@@ -55,7 +55,7 @@ const SERVICOS = [
     subtitle: 'Revisão completa durante paradas',
     shortDesc: 'Aproveitamos paradas programadas para garantir equipamentos 100% operacionais na próxima safra.',
     description: 'Aproveitamos as paradas programadas da sua planta para realizar revisões completas nos equipamentos elétricos, garantindo a próxima safra sem surpresas. Planejamento detalhado e execução em tempo recorde.',
-    image: ASSETS.substation,
+    image: '/api/files/real-paineis-xgear.jpg',
     features: [
       'Planejamento prévio detalhado',
       'Mobilização de equipe dedicada',

@@ -4,23 +4,23 @@
 import { getCompanyAgeDisplay, getCompanyAge } from '@/react-app/utils/companyAge';
 
 export const ASSETS = {
-  // Generated premium images
-  heroMain: '/api/files/hero-panels-inntag.png',
+  // Fotos reais da fábrica INNTAG (substituem stock/IA)
+  heroMain: '/api/files/hero-paineis-mt.jpg',
   solarCinematic: '/api/files/solar-cinematic.png',
-  panelsTech: '/api/files/panels-tech.png',
-  machinesIndustrial: '/api/files/machines-industrial.png',
-  servicesMaintenance: '/api/files/services-maintenance.png',
-  aboutFacility: '/api/files/about-team.png',
-  aboutTeam: '/api/files/about-team.png',
-  substation: '/api/files/substation.jpg',
-  
+  panelsTech: '/api/files/real-paineis-xgear.jpg',
+  machinesIndustrial: '/api/files/maquina-motor.jpg',
+  servicesMaintenance: '/api/files/servico-subestacao.webp',
+  aboutFacility: '/api/files/real-barramentos-fabrica.jpg',
+  aboutTeam: '/api/files/real-paineis-xgear.jpg',
+  substation: '/api/files/servico-subestacao.webp',
+
   // Section backgrounds
-  ccmPanelBg: '/api/files/ccm-panel-bg.png',
-  cubiculosMT: '/api/files/cubiculos-mt-clean.png',
-  
-  // Page-specific hero backgrounds
-  heroPortfolio: '/api/files/hero-portfolio-clientes.png',
-  heroContato: '/api/files/hero-contato.png',
+  ccmPanelBg: '/api/files/real-tc-vermelho.jpg',
+  cubiculosMT: '/api/files/hero-paineis-mt.jpg',
+
+  // Page-specific hero backgrounds (fallback; heros reais vêm do banco)
+  heroPortfolio: '/api/files/real-paineis-xgear.jpg',
+  heroContato: '/api/files/real-barramentos-fabrica.jpg',
   
   // Original INNTAG logo
   logo: '/api/files/logo-inntag.png',
