@@ -1,12 +1,5 @@
 import { useState, useEffect } from 'react';
 
-interface Background {
-  page_key: string;
-  section_key: string;
-  image_url: string | null;
-  fallback_url: string;
-}
-
 interface BackgroundsMap {
   [key: string]: string;
 }
@@ -20,13 +13,17 @@ async function fetchBackgrounds(): Promise<BackgroundsMap> {
   
   if (fetchPromise) return fetchPromise;
   
-  fetchPromise = fetch('/api/public/backgrounds')
+  fetchPromise = fetch('/api/public/backgrounds', { cache: 'no-store' })
     .then(res => res.json())
-    .then((data: Background[]) => {
+    .then((data: Record<string, string>) => {
+      // A API devolve um objeto plano { "home_hero": url, ... }.
+      // getBackground(page, section) usa a chave "page/section", então convertemos
+      // o primeiro "_" em "/" (ex.: "home_hero" -> "home/hero").
       const map: BackgroundsMap = {};
-      data.forEach(bg => {
-        const key = `${bg.page_key}/${bg.section_key}`;
-        map[key] = bg.image_url || bg.fallback_url;
+      Object.entries(data || {}).forEach(([k, v]) => {
+        const i = k.indexOf('_');
+        const key = i > 0 ? `${k.slice(0, i)}/${k.slice(i + 1)}` : k;
+        if (v) map[key] = v;
       });
       backgroundsCache = map;
       return map;

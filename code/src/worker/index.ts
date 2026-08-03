@@ -12,6 +12,12 @@ app.use("*", async (c, next) => {
   c.header("Referrer-Policy", "strict-origin-when-cross-origin");
   c.header("Strict-Transport-Security", "max-age=15552000");
   c.header("Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=()");
+  // Respostas dinâmicas de API não devem ser cacheadas pelo navegador (senão mudanças
+  // de conteúdo/backgrounds não refletem para quem já visitou).
+  if (new URL(c.req.url).pathname.startsWith("/api/") &&
+      !new URL(c.req.url).pathname.startsWith("/api/files/")) {
+    c.header("Cache-Control", "no-cache");
+  }
 });
 
 // Apex -> www: o site canônico é https://www.inntag.com.br (evita conteúdo duplicado / SEO).
