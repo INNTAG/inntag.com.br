@@ -3,6 +3,7 @@ import { Navigation } from '@/react-app/components/Navigation';
 import { Footer } from '@/react-app/components/ContactSection';
 import { SEO, schemas } from '@/react-app/components/SEO';
 import { ASSETS } from '@/react-app/data/content';
+import { useBackgrounds } from '@/react-app/hooks/useBackgrounds';
 import { ArrowUpRight, ArrowLeft, CheckCircle2, Zap, Settings, Shield, Gauge, Factory, Anchor } from 'lucide-react';
 
 const MAQUINAS = [
@@ -265,7 +266,8 @@ function MaquinaDetail({ maquina }: { maquina: typeof MAQUINAS[0] }) {
 
 export default function MaquinasPage() {
   const { slug } = useParams();
-  
+  const { getBackground, loading: bgLoading } = useBackgrounds();
+
   // If a specific machine type is selected
   if (slug) {
     const maquina = MAQUINAS.find(m => m.slug === slug);
@@ -312,12 +314,15 @@ export default function MaquinasPage() {
       
       {/* Hero */}
       <section className="relative min-h-[70vh] flex items-end pb-20 overflow-hidden">
-        <div className="absolute inset-0">
-          <img 
-            src={ASSETS.machinesIndustrial} 
-            alt="Máquinas Elétricas Rotativas"
-            className="w-full h-full object-cover"
-          />
+        <div className="absolute inset-0 bg-neutral-900">
+          {!bgLoading && (
+            <img
+              src={getBackground('maquinas', 'hero', ASSETS.machinesIndustrial)}
+              alt="Máquinas Elétricas Rotativas"
+              className="w-full h-full object-cover opacity-0 transition-opacity duration-500"
+              onLoad={(e) => { e.currentTarget.style.opacity = '1'; }}
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/40" />
         </div>
         

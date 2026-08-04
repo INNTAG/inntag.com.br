@@ -3,6 +3,7 @@ import { Navigation } from '@/react-app/components/Navigation';
 import { Footer } from '@/react-app/components/ContactSection';
 import { SEO, schemas } from '@/react-app/components/SEO';
 import { ASSETS } from '@/react-app/data/content';
+import { useBackgrounds } from '@/react-app/hooks/useBackgrounds';
 import { getCompanyAge } from '@/react-app/utils/companyAge';
 import { ArrowUpRight, ArrowLeft, CheckCircle2, Clock, Shield, Wrench } from 'lucide-react';
 
@@ -216,7 +217,8 @@ function ServiceDetail({ servico }: { servico: typeof SERVICOS[0] }) {
 
 export default function ServicosPage() {
   const { slug } = useParams();
-  
+  const { getBackground, loading: bgLoading } = useBackgrounds();
+
   // If a specific service is selected
   if (slug) {
     const servico = SERVICOS.find(s => s.slug === slug);
@@ -258,12 +260,15 @@ export default function ServicosPage() {
       
       {/* Hero */}
       <section className="relative min-h-[70vh] flex items-end pb-20 overflow-hidden">
-        <div className="absolute inset-0">
-          <img 
-            src={ASSETS.servicesMaintenance} 
-            alt="Field Service"
-            className="w-full h-full object-cover"
-          />
+        <div className="absolute inset-0 bg-neutral-900">
+          {!bgLoading && (
+            <img
+              src={getBackground('servicos', 'hero', ASSETS.servicesMaintenance)}
+              alt="Field Service"
+              className="w-full h-full object-cover opacity-0 transition-opacity duration-500"
+              onLoad={(e) => { e.currentTarget.style.opacity = '1'; }}
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/40" />
         </div>
         
