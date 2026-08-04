@@ -486,6 +486,25 @@ app.post("/api/admin/client-groups/:id/logo", adminMiddleware, async (c) => {
   return c.json({ success: true, logo_key: key });
 });
 
+// Upload genérico de imagem (usado pelo painel de Backgrounds e afins).
+// Retorna { url: "/api/files/<key>" } para o front salvar.
+app.post("/api/admin/upload", adminMiddleware, async (c) => {
+  const formData = await c.req.formData();
+  const file = formData.get("file") as File | null;
+  if (!file) return c.json({ error: "Nenhum arquivo enviado" }, 400);
+  if (!file.type || !file.type.startsWith("image/")) {
+    return c.json({ error: "O arquivo deve ser uma imagem" }, 400);
+  }
+  if (file.size > 15 * 1024 * 1024) {
+    return c.json({ error: "Imagem muito grande (máx. 15 MB)" }, 400);
+  }
+  const category = ((formData.get("category") as string) || "uploads").replace(/[^a-z0-9_-]/gi, "") || "uploads";
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const key = `${category}/${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+  await c.env.R2_BUCKET.put(key, file.stream(), { httpMetadata: { contentType: file.type } });
+  return c.json({ url: `/api/files/${key}`, key });
+});
+
 // ============ CLIENT UNITS CRUD ============
 
 app.get("/api/admin/client-groups/:id/units", adminMiddleware, async (c) => {
