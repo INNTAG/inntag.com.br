@@ -607,7 +607,7 @@ export default function Home() {
             {/* Image */}
             <div className="reveal-item opacity-0 translate-y-8 transition-all duration-700 relative">
               <div className="aspect-[4/3] rounded-3xl overflow-hidden">
-                <img src={ASSETS.cubiculosMT} alt="Cubículos de Média Tensão INNTAG" className="w-full h-full object-cover" loading="lazy" />
+                <img src={getBackground('home', 'excelencia', ASSETS.cubiculosMT)} alt="Cubículos de Média Tensão INNTAG" className="w-full h-full object-cover" loading="lazy" />
               </div>
               {/* Decorative Element */}
               <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-red-500 rounded-2xl -z-10" />
