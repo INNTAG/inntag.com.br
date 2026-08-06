@@ -448,7 +448,7 @@ export default function Home() {
         <div className="grid lg:grid-cols-2">
           {/* Image Side - Full Bleed */}
           <div className="relative h-[600px] lg:h-auto overflow-hidden">
-            <img src={ASSETS.servicesMaintenance} alt="Field Service INNTAG" className="w-full h-full object-cover scale-105" loading="lazy" />
+            <img src={getBackground('servicos', 'hero', ASSETS.servicesMaintenance)} alt="Field Service INNTAG" className="w-full h-full object-cover scale-105" loading="lazy" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent lg:hidden" />
             
@@ -587,7 +587,7 @@ export default function Home() {
             <div className="order-1 lg:order-2 reveal-item opacity-0 translate-y-8 transition-all duration-700 delay-100">
               <div className="relative">
                 <div className="aspect-[4/3] rounded-3xl overflow-hidden">
-                  <img src={ASSETS.machinesIndustrial} alt="Máquinas Rotativas INNTAG" className="w-full h-full object-cover" loading="lazy" />
+                  <img src={getBackground('maquinas', 'hero', ASSETS.machinesIndustrial)} alt="Máquinas Rotativas INNTAG" className="w-full h-full object-cover" loading="lazy" />
                 </div>
                 {/* Accent Badge */}
                 <div className="absolute -bottom-6 -left-6 bg-red-500 rounded-2xl p-6 shadow-2xl">
