@@ -81,10 +81,19 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
   };
 
   // Line styling
-  const lineStyle = { stroke: '#ffffff', strokeWidth: 2.5 };
-  const busbarStyle = { stroke: '#ffffff', strokeWidth: 5 };
-  const thinLineStyle = { stroke: '#d4d4d4', strokeWidth: 2 };
-  const dashedLineStyle = { stroke: '#d4d4d4', strokeWidth: 2, strokeDasharray: '6,4' };
+  const lineStyle = { stroke: '#e4e4e7', strokeWidth: 2.5, strokeLinecap: 'round' } as const;
+  // Barramento MT (13,8kV) em vermelho; barramentos BT em laranja
+  const busbarMTStyle = { stroke: '#dc2626', strokeWidth: 6, strokeLinecap: 'round', style: { filter: 'drop-shadow(0 0 5px rgba(220,38,38,0.5))' } } as const;
+  const busbarBTStyle = { stroke: '#f97316', strokeWidth: 6, strokeLinecap: 'round', style: { filter: 'drop-shadow(0 0 5px rgba(249,115,22,0.45))' } } as const;
+  const thinLineStyle = { stroke: '#d4d4d4', strokeWidth: 2, strokeLinecap: 'round' } as const;
+  const dashedLineStyle = { stroke: '#d4d4d4', strokeWidth: 2, strokeDasharray: '6,4', strokeLinecap: 'round' } as const;
+
+  // SCADA: pulso de energia que corre por cima da linha (a linha sólida fica embaixo)
+  const Flow = ({ x1, y1, x2, y2, dur = 1.4, color = '#fdba74' }: { x1: number; y1: number; x2: number; y2: number; dur?: number; color?: string }) => (
+    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeDasharray="7 14" opacity="0.85" pointerEvents="none">
+      <animate attributeName="stroke-dashoffset" from="21" to="0" dur={`${dur}s`} repeatCount="indefinite" />
+    </line>
+  );
 
   return (
     <div className={`relative ${className}`}>
@@ -143,51 +152,91 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
         className="w-full h-full"
         preserveAspectRatio="xMidYMid meet"
       >
-        
+        <defs>
+          {/* Nós em vidro grafite */}
+          <linearGradient id="nodeGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#2b2b2f" />
+            <stop offset="100%" stopColor="#0c0c0e" />
+          </linearGradient>
+          {/* Gerador em destaque */}
+          <radialGradient id="genGrad" cx="50%" cy="38%" r="72%">
+            <stop offset="0%" stopColor="#43290f" />
+            <stop offset="100%" stopColor="#0c0c0e" />
+          </radialGradient>
+          {/* Sombra dos nós (profundidade) */}
+          <filter id="nodeShadow" x="-25%" y="-25%" width="150%" height="150%">
+            <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#000000" floodOpacity="0.55" />
+          </filter>
+          {/* Grade técnica de supervisório */}
+          <pattern id="scadaGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#52525b" strokeWidth="1" opacity="0.18" />
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="1600" height="850" fill="url(#scadaGrid)" pointerEvents="none" />
+        <style>{`
+          .uf-node { transition: filter .2s ease; cursor: pointer; }
+          .uf-node > rect, .uf-node > circle { transition: stroke .2s ease; }
+          .uf-node:hover { filter: drop-shadow(0 0 9px rgba(249,115,22,0.6)); }
+          .uf-node:hover > rect, .uf-node:hover > circle { stroke: #f97316; }
+          .uf-node text { letter-spacing: .4px; }
+        `}</style>
+
         {/* ================ SUBESTAÇÃO ================ */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('subestacao', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'subestacao'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('subestacao', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'subestacao'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="700" y="20" width="200" height="60" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="800" y="48" fill="#ffffff" fontSize="14" textAnchor="middle" fontWeight="600">SUBESTAÇÃO</text>
-          <text x="800" y="66" fill="#d4d4d4" fontSize="11" textAnchor="middle">138kV / 69kV / 34.5kV</text>
+          <text x="800" y="66" fill="#d4d4d4" fontSize="11" textAnchor="middle">138kV / 69kV / 13,8kV</text>
         </g>
         
         {/* Saída da subestação */}
         <line x1="800" y1="80" x2="800" y2="130" {...lineStyle} />
-        
-        {/* Barramento MT principal */}
-        <line x1="200" y1="130" x2="1300" y2="130" {...busbarStyle} />
+        <Flow x1={800} y1={80} x2={800} y2={130} dur={1.1} color="#fca5a5" />
+
+        {/* Barramento MT principal 13,8kV */}
+        <line x1="200" y1="130" x2="1300" y2="130" {...busbarMTStyle} />
+        {/* Energia flui do ponto de injeção (subestação) para as pontas */}
+        <Flow x1={800} y1={130} x2={200} y2={130} dur={2.2} color="#fca5a5" />
+        <Flow x1={800} y1={130} x2={1300} y2={130} dur={2} color="#fca5a5" />
         {/* Label do barramento MT */}
-        <rect x="1100" y="100" width="140" height="24" fill="rgba(0,0,0,0.8)" rx="3" />
-        <text x="1170" y="117" fill="#ffffff" fontSize="12" textAnchor="middle" fontWeight="500">BARRAMENTO MT</text>
+        <rect x="1080" y="118" width="180" height="24" fill="#18181b" stroke="#dc2626" strokeWidth="1" rx="6" />
+        <text x="1170" y="134" fill="#fca5a5" fontSize="11" textAnchor="middle" fontWeight="600">BARRAMENTO MT • 13,8kV</text>
         
         {/* Conexões para cubículos */}
         <line x1="200" y1="130" x2="200" y2="180" {...lineStyle} />
         <line x1="800" y1="130" x2="800" y2="180" {...lineStyle} />
         <line x1="1300" y1="130" x2="1300" y2="180" {...lineStyle} />
+        <Flow x1={200} y1={130} x2={200} y2={180} dur={1.2} color="#fca5a5" />
+        <Flow x1={800} y1={130} x2={800} y2={180} dur={1.3} color="#fca5a5" />
+        {/* Cogeração exporta: fluxo sobe para o barramento */}
+        <Flow x1={1300} y1={180} x2={1300} y2={130} dur={1.25} color="#fca5a5" />
+        {/* Pontos de junção no barramento MT */}
+        <circle cx="200" cy="130" r="5" fill="#ef4444" />
+        <circle cx="800" cy="130" r="5" fill="#ef4444" />
+        <circle cx="1300" cy="130" r="5" fill="#ef4444" />
 
         {/* ================ CUBÍCULOS MT ================ */}
         
         {/* Cubículo ADM */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('cubiculo_adm', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'cubiculo_adm'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('cubiculo_adm', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'cubiculo_adm'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="100" y="180" width="200" height="60" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="200" y="208" fill="#ffffff" fontSize="13" textAnchor="middle" fontWeight="500">CUBÍCULO MT</text>
           <text x="200" y="226" fill="#d4d4d4" fontSize="11" textAnchor="middle">ADM</text>
         </g>
 
         {/* Cubículo Fábrica */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('cubiculo_fabrica', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'cubiculo_fabrica'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('cubiculo_fabrica', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'cubiculo_fabrica'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="700" y="180" width="200" height="60" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="800" y="208" fill="#ffffff" fontSize="13" textAnchor="middle" fontWeight="500">CUBÍCULO MT</text>
           <text x="800" y="226" fill="#d4d4d4" fontSize="11" textAnchor="middle">FÁBRICA</text>
         </g>
 
         {/* Cubículo Cogeração */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('cubiculo_cogeracao', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'cubiculo_cogeracao'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('cubiculo_cogeracao', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'cubiculo_cogeracao'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="1200" y="180" width="200" height="60" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="1300" y="208" fill="#ffffff" fontSize="13" textAnchor="middle" fontWeight="500">CUBÍCULO MT</text>
           <text x="1300" y="226" fill="#d4d4d4" fontSize="11" textAnchor="middle">COGERAÇÃO</text>
         </g>
@@ -196,92 +245,79 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
         
         <line x1="200" y1="240" x2="200" y2="270" {...lineStyle} />
         <line x1="800" y1="240" x2="800" y2="270" {...lineStyle} />
-        <line x1="1300" y1="240" x2="1300" y2="270" {...lineStyle} />
+        <line x1="1300" y1="240" x2="1300" y2="420" {...lineStyle} />
+        <Flow x1={200} y1={240} x2={200} y2={270} dur={1.2} color="#fca5a5" />
+        <Flow x1={800} y1={240} x2={800} y2={270} dur={1.3} color="#fca5a5" />
+        <Flow x1={1300} y1={420} x2={1300} y2={240} dur={1.4} color="#fca5a5" />
 
         {/* Trafo ADM */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('trafo_adm', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'trafo_adm'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
-          <circle cx="200" cy="295" r="25" fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
-          <circle cx="200" cy="345" r="25" fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('trafo_adm', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'trafo_adm'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+          <circle cx="200" cy="295" r="25" fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
+          <circle cx="200" cy="345" r="25" fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="200" y="300" fill="#ffffff" fontSize="11" textAnchor="middle">AT</text>
           <text x="200" y="350" fill="#ffffff" fontSize="11" textAnchor="middle">BT</text>
         </g>
         <text x="260" y="320" fill="#d4d4d4" fontSize="11">TRAFO ADM</text>
 
         {/* Trafo Fábrica */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('trafo_fabrica', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'trafo_fabrica'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
-          <circle cx="800" cy="295" r="25" fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
-          <circle cx="800" cy="345" r="25" fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('trafo_fabrica', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'trafo_fabrica'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+          <circle cx="800" cy="295" r="25" fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
+          <circle cx="800" cy="345" r="25" fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="800" y="300" fill="#ffffff" fontSize="11" textAnchor="middle">AT</text>
           <text x="800" y="350" fill="#ffffff" fontSize="11" textAnchor="middle">BT</text>
         </g>
         <text x="860" y="320" fill="#d4d4d4" fontSize="11">TRAFO FÁBRICA</text>
 
-        {/* Trafo Cogeração */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('trafo_cogeracao', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'trafo_cogeracao'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
-          <circle cx="1300" cy="295" r="25" fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
-          <circle cx="1300" cy="345" r="25" fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
-          <text x="1300" y="300" fill="#ffffff" fontSize="11" textAnchor="middle">AT</text>
-          <text x="1300" y="350" fill="#ffffff" fontSize="11" textAnchor="middle">BT</text>
-        </g>
-        <text x="1360" y="320" fill="#d4d4d4" fontSize="11">TRAFO COG.</text>
+        {/* Cogeração em 13,8kV: sem trafo — o gerador conecta direto no cubículo MT */}
 
         {/* ================ BARRAMENTO BT com TIEs ================ */}
         
         <line x1="200" y1="370" x2="200" y2="420" {...lineStyle} />
         <line x1="800" y1="370" x2="800" y2="420" {...lineStyle} />
-        <line x1="1300" y1="370" x2="1300" y2="420" {...lineStyle} />
+        <Flow x1={200} y1={370} x2={200} y2={420} dur={1.35} />
+        <Flow x1={800} y1={370} x2={800} y2={420} dur={1.2} />
 
-        {/* Barramento seção ADM */}
-        <line x1="200" y1="420" x2="300" y2="420" {...busbarStyle} />
-        
-        {/* TIE 1 */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('tie_1', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'tie_1'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
-          <rect x="300" y="400" width="70" height="40" rx="4" fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
-          <text x="335" y="425" fill="#ffffff" fontSize="12" textAnchor="middle" fontWeight="500">TIE</text>
-        </g>
-        
-        {/* Barramento seção Fábrica */}
-        <line x1="370" y1="420" x2="1100" y2="420" {...busbarStyle} />
-        
-        {/* TIE 2 */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('tie_2', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'tie_2'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
-          <rect x="1100" y="400" width="70" height="40" rx="4" fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
-          <text x="1135" y="425" fill="#ffffff" fontSize="12" textAnchor="middle" fontWeight="500">TIE</text>
-        </g>
-        
-        {/* Barramento seção Cogeração */}
-        <line x1="1170" y1="420" x2="1300" y2="420" {...busbarStyle} />
-        
+        {/* Barramento Fábrica 440V — termina exatamente nas conexões (450 a 1000) */}
+        <line x1="450" y1="420" x2="1000" y2="420" {...busbarBTStyle} />
+
         {/* Label do barramento BT */}
-        <rect x="500" y="380" width="200" height="24" fill="rgba(0,0,0,0.85)" rx="3" />
-        <text x="600" y="397" fill="#ffffff" fontSize="11" textAnchor="middle" fontWeight="500">BARRAMENTO 480V / 440V / 380V</text>
+        <rect x="490" y="408" width="120" height="24" fill="#18181b" stroke="#f97316" strokeWidth="1" rx="6" />
+        <text x="550" y="424" fill="#fdba74" fontSize="10" textAnchor="middle" fontWeight="600">BARRAMENTO 440V</text>
 
         {/* ================ QGBT's ================ */}
-        
+
         <line x1="200" y1="420" x2="200" y2="480" {...lineStyle} />
         <line x1="650" y1="420" x2="650" y2="480" {...lineStyle} />
         <line x1="1000" y1="420" x2="1000" y2="480" {...lineStyle} />
+        <Flow x1={200} y1={420} x2={200} y2={480} dur={1.4} />
+        <Flow x1={650} y1={420} x2={650} y2={480} dur={1.3} />
+        <Flow x1={1000} y1={420} x2={1000} y2={480} dur={1.35} />
+        {/* Pontos de junção no barramento BT */}
+        <circle cx="450" cy="420" r="5" fill="#fb923c" />
+        <circle cx="650" cy="420" r="5" fill="#fb923c" />
+        <circle cx="800" cy="420" r="5" fill="#fb923c" />
+        <circle cx="1000" cy="420" r="5" fill="#fb923c" />
 
         {/* QGBT ADM */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('qgbt_adm', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qgbt_adm'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('qgbt_adm', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qgbt_adm'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="100" y="480" width="200" height="60" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="200" y="508" fill="#ffffff" fontSize="14" textAnchor="middle" fontWeight="500">QGBT</text>
           <text x="200" y="526" fill="#d4d4d4" fontSize="11" textAnchor="middle">ADM</text>
         </g>
 
         {/* QGBT Fábrica */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('qgbt_fabrica', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qgbt_fabrica'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('qgbt_fabrica', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qgbt_fabrica'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="550" y="480" width="200" height="60" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="650" y="508" fill="#ffffff" fontSize="14" textAnchor="middle" fontWeight="500">QGBT</text>
           <text x="650" y="526" fill="#d4d4d4" fontSize="11" textAnchor="middle">FÁBRICA</text>
         </g>
 
         {/* QGBT Essencial */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('qgbt_essencial', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qgbt_essencial'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('qgbt_essencial', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qgbt_essencial'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="900" y="480" width="200" height="60" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="1000" y="508" fill="#ffffff" fontSize="14" textAnchor="middle" fontWeight="500">QGBT</text>
           <text x="1000" y="526" fill="#d4d4d4" fontSize="11" textAnchor="middle">ESSENCIAL</text>
         </g>
@@ -292,57 +328,60 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
         <line x1="450" y1="420" x2="450" y2="480" {...lineStyle} />
         
         {/* Banco de Capacitores - Painel */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('banco_capacitor', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'banco_capacitor'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('banco_capacitor', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'banco_capacitor'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="380" y="480" width="140" height="60" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="450" y="505" fill="#d4d4d4" fontSize="10" textAnchor="middle">BANCO</text>
           <text x="450" y="522" fill="#ffffff" fontSize="12" textAnchor="middle" fontWeight="500">CAPACITOR</text>
         </g>
 
         {/* ================ COGERAÇÃO ================ */}
         
-        <line x1="1300" y1="420" x2="1300" y2="510" {...lineStyle} />
+        {/* Gerador 13,8kV conecta direto ao trafo da cogeração (sem passar pela barra de 440V) */}
+        <line x1="1300" y1="420" x2="1300" y2="516" {...lineStyle} />
+        <Flow x1={1300} y1={516} x2={1300} y2={420} dur={1.2} color="#fca5a5" />
         
         {/* Gerador */}
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('gerador', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'gerador'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
-          <circle cx="1300" cy="570" r="55" fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
-          <text x="1300" y="565" fill="#ffffff" fontSize="26" textAnchor="middle" fontWeight="500">G</text>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('gerador', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'gerador'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+          <circle cx="1300" cy="570" r="55" fill="url(#genGrad)" stroke="#f97316" strokeWidth="2.5" filter="url(#nodeShadow)" />
+          <text x="1300" y="565" fill="#ffffff" fontSize="26" textAnchor="middle" fontWeight="600">G</text>
           <text x="1300" y="590" fill="#d4d4d4" fontSize="18" textAnchor="middle">~</text>
         </g>
         <text x="1300" y="645" fill="#d4d4d4" fontSize="12" textAnchor="middle">GERADOR</text>
+        <text x="1300" y="661" fill="#fca5a5" fontSize="10" textAnchor="middle">13,8kV</text>
 
         {/* Excitação */}
         <line x1="1355" y1="570" x2="1420" y2="570" {...dashedLineStyle} />
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('excitacao', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'excitacao'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('excitacao', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'excitacao'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="1420" y="540" width="130" height="60" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="1485" y="565" fill="#d4d4d4" fontSize="10" textAnchor="middle">PAINEL</text>
           <text x="1485" y="582" fill="#ffffff" fontSize="12" textAnchor="middle" fontWeight="500">EXCITAÇÃO</text>
         </g>
 
         {/* Proteção */}
         <line x1="1485" y1="540" x2="1485" y2="490" {...thinLineStyle} />
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('protecao', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'protecao'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('protecao', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'protecao'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="1420" y="430" width="130" height="60" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="1485" y="455" fill="#d4d4d4" fontSize="10" textAnchor="middle">PAINEL</text>
           <text x="1485" y="472" fill="#ffffff" fontSize="12" textAnchor="middle" fontWeight="500">PROTEÇÃO</text>
         </g>
 
         {/* Sincronismo */}
         <line x1="1485" y1="600" x2="1485" y2="650" {...thinLineStyle} />
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('sincronismo', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'sincronismo'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('sincronismo', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'sincronismo'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="1420" y="650" width="130" height="60" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="1485" y="675" fill="#d4d4d4" fontSize="10" textAnchor="middle">PAINEL</text>
           <text x="1485" y="692" fill="#ffffff" fontSize="12" textAnchor="middle" fontWeight="500">SINCRONISMO</text>
         </g>
 
         {/* QTA */}
         <line x1="1485" y1="710" x2="1485" y2="740" {...thinLineStyle} />
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('qta', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qta'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('qta', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qta'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="1420" y="740" width="130" height="60" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="1485" y="765" fill="#d4d4d4" fontSize="10" textAnchor="middle">PAINEL</text>
           <text x="1485" y="782" fill="#ffffff" fontSize="12" textAnchor="middle" fontWeight="500">QTA</text>
         </g>
@@ -350,20 +389,20 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
         {/* ================ DISTRIBUIÇÃO ADM ================ */}
         
         <line x1="200" y1="540" x2="200" y2="580" {...lineStyle} />
-        <line x1="100" y1="580" x2="380" y2="580" {...lineStyle} />
+        <line x1="140" y1="580" x2="320" y2="580" {...lineStyle} />
 
         {/* QDL Iluminação */}
         <line x1="140" y1="580" x2="140" y2="620" {...lineStyle} />
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('qdl_iluminacao', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qdl_iluminacao'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('qdl_iluminacao', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qdl_iluminacao'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="60" y="620" width="160" height="55" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="140" y="645" fill="#ffffff" fontSize="13" textAnchor="middle" fontWeight="500">QDL</text>
           <text x="140" y="662" fill="#d4d4d4" fontSize="10" textAnchor="middle">ILUMINAÇÃO</text>
         </g>
 
         {/* Luminárias */}
         <line x1="140" y1="675" x2="140" y2="710" {...thinLineStyle} />
-        <line x1="80" y1="710" x2="200" y2="710" {...thinLineStyle} />
+        <line x1="95" y1="710" x2="185" y2="710" {...thinLineStyle} />
         
         <line x1="95" y1="710" x2="95" y2="730" {...thinLineStyle} />
         <circle cx="95" cy="750" r="18" fill="rgba(0,0,0,0.5)" stroke="#d4d4d4" strokeWidth="1.5" />
@@ -378,9 +417,9 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
 
         {/* QDF Tomadas */}
         <line x1="320" y1="580" x2="320" y2="620" {...lineStyle} />
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('qdf_tomadas', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qdf_tomadas'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('qdf_tomadas', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qdf_tomadas'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="240" y="620" width="160" height="55" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="320" y="645" fill="#ffffff" fontSize="13" textAnchor="middle" fontWeight="500">QDF</text>
           <text x="320" y="662" fill="#d4d4d4" fontSize="10" textAnchor="middle">TOMADAS</text>
         </g>
@@ -388,20 +427,20 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
         {/* ================ DISTRIBUIÇÃO FÁBRICA ================ */}
         
         <line x1="650" y1="540" x2="650" y2="580" {...lineStyle} />
-        <line x1="500" y1="580" x2="800" y2="580" {...lineStyle} />
+        <line x1="550" y1="580" x2="750" y2="580" {...lineStyle} />
 
         {/* CCM Motores */}
         <line x1="550" y1="580" x2="550" y2="620" {...lineStyle} />
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('ccm', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'ccm'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('ccm', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'ccm'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="470" y="620" width="160" height="55" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="550" y="645" fill="#ffffff" fontSize="14" textAnchor="middle" fontWeight="500">CCM</text>
           <text x="550" y="662" fill="#d4d4d4" fontSize="10" textAnchor="middle">MOTORES</text>
         </g>
 
         {/* Motores */}
         <line x1="550" y1="675" x2="550" y2="710" {...thinLineStyle} />
-        <line x1="480" y1="710" x2="620" y2="710" {...thinLineStyle} />
+        <line x1="500" y1="710" x2="600" y2="710" {...thinLineStyle} />
         
         <line x1="500" y1="710" x2="500" y2="730" {...thinLineStyle} />
         <circle cx="500" cy="755" r="22" fill="rgba(0,0,0,0.5)" stroke="#d4d4d4" strokeWidth="1.5" />
@@ -422,16 +461,16 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
 
         {/* QDF Fornos */}
         <line x1="750" y1="580" x2="750" y2="620" {...lineStyle} />
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('qdf_fornos', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qdf_fornos'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('qdf_fornos', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qdf_fornos'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="670" y="620" width="160" height="55" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="750" y="645" fill="#ffffff" fontSize="14" textAnchor="middle" fontWeight="500">QDF</text>
           <text x="750" y="662" fill="#d4d4d4" fontSize="10" textAnchor="middle">FORNOS</text>
         </g>
 
         {/* Fornos */}
         <line x1="750" y1="675" x2="750" y2="710" {...thinLineStyle} />
-        <line x1="690" y1="710" x2="810" y2="710" {...thinLineStyle} />
+        <line x1="710" y1="710" x2="790" y2="710" {...thinLineStyle} />
         
         <line x1="710" y1="710" x2="710" y2="730" {...thinLineStyle} />
         <rect x="680" y="730" width="60" height="45" rx="3" fill="rgba(0,0,0,0.5)" stroke="#d4d4d4" strokeWidth="1.5" />
@@ -446,58 +485,92 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
         {/* ================ DISTRIBUIÇÃO ESSENCIAL ================ */}
         
         <line x1="1000" y1="540" x2="1000" y2="580" {...lineStyle} />
-        <line x1="900" y1="580" x2="1100" y2="580" {...lineStyle} />
+        <line x1="940" y1="580" x2="1060" y2="580" {...lineStyle} />
 
         {/* QDL Emergência */}
         <line x1="940" y1="580" x2="940" y2="620" {...lineStyle} />
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('qdl_emergencia', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qdl_emergencia'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('qdl_emergencia', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'qdl_emergencia'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="860" y="620" width="160" height="55" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="940" y="645" fill="#ffffff" fontSize="13" textAnchor="middle" fontWeight="500">QDL</text>
           <text x="940" y="662" fill="#d4d4d4" fontSize="10" textAnchor="middle">EMERGÊNCIA</text>
         </g>
 
         {/* CCM Crítico */}
         <line x1="1060" y1="580" x2="1060" y2="720" {...lineStyle} />
-        <g className="cursor-pointer hover:opacity-80" onMouseEnter={(e) => handleMouseEnter('ccm_critico', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'ccm_critico'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
+        <g className="uf-node" onMouseEnter={(e) => handleMouseEnter('ccm_critico', e)} onMouseLeave={handleMouseLeave} onClick={() => { const item = items.find(i => i.item_key === 'ccm_critico'); if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`; }}>
           <rect x="980" y="720" width="160" height="55" rx="4" 
-            fill="rgba(0,0,0,0.6)" stroke="#ffffff" strokeWidth="2" />
+            fill="url(#nodeGrad)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadow)" />
           <text x="1060" y="745" fill="#ffffff" fontSize="13" textAnchor="middle" fontWeight="500">CCM</text>
           <text x="1060" y="762" fill="#d4d4d4" fontSize="10" textAnchor="middle">CRÍTICO</text>
         </g>
 
+        {/* ================ LEDs DE STATUS (SCADA) ================ */}
+        <g pointerEvents="none">
+          {([
+            [888, 32],                                  // Subestação
+            [288, 192], [888, 192], [1388, 192],        // Cubículos MT
+            [288, 492], [738, 492], [1088, 492],        // QGBTs
+            [508, 492],                                 // Banco Capacitor
+            [208, 632], [388, 632], [618, 632],         // QDL Ilum., QDF Tomadas, CCM
+            [818, 632], [1008, 632],                    // QDF Fornos, QDL Emergência
+            [1128, 732],                                // CCM Crítico
+            [1538, 442], [1538, 552], [1538, 662], [1538, 752], // Painéis
+          ] as [number, number][]).map(([x, y], i) => (
+            <circle key={i} cx={x} cy={y} r="3.5" fill="#4ade80" style={{ filter: 'drop-shadow(0 0 3px rgba(74,222,128,0.9))' }}>
+              <animate attributeName="opacity" values="1;0.25;1" dur="2.4s" begin={`${(i % 5) * 0.45}s`} repeatCount="indefinite" />
+            </circle>
+          ))}
+        </g>
+
         {/* ================ LEGENDA ================ */}
         <g transform="translate(60, 830)">
+          <rect x="-16" y="-19" width="1210" height="32" rx="10" fill="rgba(12,12,14,0.72)" stroke="#27272a" strokeWidth="1" />
           <text x="0" y="0" fill="#ffffff" fontSize="11" fontWeight="600">LEGENDA:</text>
-          
+
           <g transform="translate(80, 0)">
-            <line x1="0" y1="-4" x2="30" y2="-4" stroke="#ffffff" strokeWidth="4" />
-            <text x="40" y="0" fill="#d4d4d4" fontSize="10">Barramento</text>
+            <line x1="0" y1="-4" x2="30" y2="-4" stroke="#dc2626" strokeWidth="4" strokeLinecap="round" />
+            <text x="40" y="0" fill="#d4d4d4" fontSize="10">Barramento MT 13,8kV</text>
           </g>
-          
-          <g transform="translate(180, 0)">
+
+          <g transform="translate(215, 0)">
+            <line x1="0" y1="-4" x2="30" y2="-4" stroke="#f97316" strokeWidth="4" strokeLinecap="round" />
+            <text x="40" y="0" fill="#d4d4d4" fontSize="10">Barramento BT</text>
+          </g>
+
+          <g transform="translate(330, 0)">
             <circle cx="10" cy="-4" r="10" fill="transparent" stroke="#ffffff" strokeWidth="1.5" />
             <text x="30" y="0" fill="#d4d4d4" fontSize="10">Transformador</text>
           </g>
-          
-          <g transform="translate(320, 0)">
+
+          <g transform="translate(470, 0)">
             <rect x="0" y="-12" width="30" height="18" rx="2" fill="transparent" stroke="#ffffff" strokeWidth="1.5" />
             <text x="40" y="0" fill="#d4d4d4" fontSize="10">Painel</text>
           </g>
-          
-          <g transform="translate(420, 0)">
+
+          <g transform="translate(570, 0)">
             <circle cx="10" cy="-4" r="12" fill="transparent" stroke="#ffffff" strokeWidth="1.5" />
             <text x="10" y="0" fill="#d4d4d4" fontSize="9" textAnchor="middle">M</text>
             <text x="32" y="0" fill="#d4d4d4" fontSize="10">Motor</text>
           </g>
-          
-          <g transform="translate(510, 0)">
+
+          <g transform="translate(660, 0)">
             <circle cx="12" cy="-4" r="14" fill="transparent" stroke="#ffffff" strokeWidth="1.5" />
             <text x="12" y="-1" fill="#ffffff" fontSize="11" textAnchor="middle">G</text>
             <text x="36" y="0" fill="#d4d4d4" fontSize="10">Gerador</text>
           </g>
 
-          <text x="650" y="0" fill="#a3a3a3" fontSize="10">Passe o mouse nos elementos para detalhes</text>
+          <g transform="translate(760, 0)">
+            <circle cx="6" cy="-4" r="4" fill="#4ade80" />
+            <text x="18" y="0" fill="#d4d4d4" fontSize="10">Em operação</text>
+          </g>
+
+          <g transform="translate(870, 0)">
+            <line x1="0" y1="-4" x2="30" y2="-4" stroke="#fdba74" strokeWidth="2.2" strokeLinecap="round" strokeDasharray="7 14" />
+            <text x="40" y="0" fill="#d4d4d4" fontSize="10">Fluxo de energia</text>
+          </g>
+
+          <text x="990" y="0" fill="#a3a3a3" fontSize="10">Passe o mouse nos elementos para detalhes</text>
         </g>
 
       </svg>
