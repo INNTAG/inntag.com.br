@@ -56,6 +56,7 @@ function PageFallback() {
 function AppContent() {
   const location = useLocation();
   const isConfigPage = location.pathname.startsWith('/config');
+  const isUnifilarPage = location.pathname.startsWith('/unifilar');
 
   return (
     <>
@@ -106,7 +107,7 @@ function AppContent() {
         </Routes>
       </Suspense>
       {/* WhatsApp floating button - only on public pages */}
-      {!isConfigPage && <WhatsAppButton />}
+      {!isConfigPage && !isUnifilarPage && <WhatsAppButton />}
       {!isConfigPage && <CookieConsent />}
     </>
   );

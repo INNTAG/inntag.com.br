@@ -5,12 +5,15 @@ import { UnifilarDiagram } from '@/react-app/components/UnifilarDiagram';
 export default function Unifilar() {
   return (
     <div className="min-h-screen bg-neutral-950 relative overflow-hidden">
-      {/* Background */}
-      <div 
-        className="fixed inset-0 bg-cover bg-center"
-        style={{ backgroundImage: 'url(/api/files/lp-hero-panels.png)' }}
+      {/* Background — foto contida: blur + vinheta para o diagrama dominar o palco */}
+      <div
+        className="fixed inset-0 bg-cover bg-center scale-105"
+        style={{ backgroundImage: 'url(/api/files/lp-hero-panels.png)', filter: 'blur(6px) brightness(0.6)' }}
       />
-      <div className="fixed inset-0 bg-black/75" />
+      <div
+        className="fixed inset-0"
+        style={{ background: 'radial-gradient(ellipse 75% 65% at 50% 45%, rgba(6,6,9,0.88) 0%, rgba(6,6,9,0.82) 55%, rgba(6,6,9,0.62) 100%)' }}
+      />
       
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/10">
