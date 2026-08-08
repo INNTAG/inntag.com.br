@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Zap } from 'lucide-react';
+import { Zap, Smartphone } from 'lucide-react';
 
 interface UnifilarItem {
   id: number;
@@ -36,6 +36,16 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
   const [items, setItems] = useState<UnifilarItem[]>([]);
   const [hoveredItem, setHoveredItem] = useState<UnifilarItem | null>(null);
   const [popupPosition, setPopupPosition] = useState<PopupPosition>({ x: 0, y: 0 });
+
+  // Celular em pé → versão simplificada; girar para paisagem mostra a completa
+  const [isMobilePortrait, setIsMobilePortrait] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px) and (orientation: portrait)');
+    const update = () => setIsMobilePortrait(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     fetch('/api/public/unifilar')
@@ -119,6 +129,146 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
       <animate attributeName="stroke-dashoffset" from="21" to="0" dur={`${dur}s`} repeatCount="indefinite" />
     </line>
   );
+
+  // ---------- Versão mobile (retrato): unifilar simplificado ----------
+  if (isMobilePortrait) {
+    return (
+      <div className={`relative ${className}`}>
+        {/* Aviso: girar o celular para a versão completa */}
+        <div className="absolute top-1 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900/85 backdrop-blur border border-neutral-700 text-neutral-300 text-xs whitespace-nowrap">
+          <Smartphone className="w-4 h-4 rotate-90 text-orange-400" />
+          Gire o celular para o diagrama completo
+        </div>
+
+        <svg viewBox="0 -44 420 764" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="nodeGradM" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#2b2b2f" />
+              <stop offset="100%" stopColor="#0c0c0e" />
+            </linearGradient>
+            <radialGradient id="genGradM" cx="50%" cy="38%" r="72%">
+              <stop offset="0%" stopColor="#43290f" />
+              <stop offset="100%" stopColor="#0c0c0e" />
+            </radialGradient>
+            <filter id="nodeShadowM" x="-25%" y="-25%" width="150%" height="150%">
+              <feDropShadow dx="0" dy="3" stdDeviation="4" floodColor="#000000" floodOpacity="0.55" />
+            </filter>
+          </defs>
+          <style>{`
+            .uf-node { transition: filter .2s ease; cursor: pointer; outline: none; }
+            .uf-node > rect, .uf-node > circle { transition: stroke .2s ease; }
+            .uf-node:hover, .uf-node:focus-visible { filter: drop-shadow(0 0 9px rgba(249,115,22,0.6)); }
+            .uf-node:hover > rect, .uf-node:hover > circle,
+            .uf-node:focus-visible > rect, .uf-node:focus-visible > circle { stroke: #f97316; }
+            .uf-node text { letter-spacing: .4px; }
+          `}</style>
+
+          {/* SUBESTAÇÃO */}
+          <g {...nodeProps('subestacao')}>
+            <rect x="60" y="26" width="200" height="64" rx="6" fill="url(#nodeGradM)" stroke="#b91c1c" strokeWidth="2" filter="url(#nodeShadowM)" />
+            <text x="160" y="52" fill="#ffffff" fontSize="15" textAnchor="middle" fontWeight="600">SUBESTAÇÃO</text>
+            <text x="160" y="72" fill="#d4d4d4" fontSize="10" textAnchor="middle" fontFamily={MONO}>138kV / 69kV / 13,8kV</text>
+          </g>
+          <line x1="160" y1="90" x2="160" y2="132" {...lineStyle} />
+          <Flow x1={160} y1={90} x2={160} y2={132} dur={1.1} color="#fca5a5" />
+          <rect x="153" y="102" width="14" height="14" rx="2" fill="#0c0c0e" stroke="#e4e4e7" strokeWidth="1.5" pointerEvents="none" />
+
+          {/* Barramento MT 13,8kV */}
+          <line x1="60" y1="132" x2="360" y2="132" {...busbarMTStyle} />
+          <Flow x1={160} y1={132} x2={360} y2={132} dur={1.6} color="#fca5a5" />
+          <circle cx="160" cy="132" r="5" fill="#ef4444" />
+          <circle cx="330" cy="132" r="5" fill="#ef4444" />
+          <rect x="200" y="120" width="112" height="24" rx="6" fill="#18181b" stroke="#dc2626" strokeWidth="1" />
+          <text x="256" y="136" fill="#fca5a5" fontSize="10" textAnchor="middle" fontWeight="600" fontFamily={MONO}>MT • 13,8kV</text>
+
+          {/* CUBÍCULO MT */}
+          <line x1="160" y1="132" x2="160" y2="180" {...lineStyle} />
+          <Flow x1={160} y1={132} x2={160} y2={180} dur={1.2} color="#fca5a5" />
+          <rect x="153" y="149" width="14" height="14" rx="2" fill="#0c0c0e" stroke="#e4e4e7" strokeWidth="1.5" pointerEvents="none" />
+          <g {...nodeProps('cubiculo_fabrica')}>
+            <rect x="60" y="180" width="200" height="58" rx="6" fill="url(#nodeGradM)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadowM)" />
+            <text x="160" y="204" fill="#ffffff" fontSize="15" textAnchor="middle" fontWeight="600">CUBÍCULO MT</text>
+            <text x="160" y="222" fill="#a1a1aa" fontSize="10" textAnchor="middle" letterSpacing="1.5">FÁBRICA</text>
+          </g>
+
+          {/* TRAFO (IEC) */}
+          <line x1="160" y1="238" x2="160" y2="268" {...lineStyle} />
+          <Flow x1={160} y1={238} x2={160} y2={268} dur={1.25} color="#fca5a5" />
+          <g {...nodeProps('trafo_fabrica')}>
+            <circle cx="160" cy="293" r="25" fill="none" stroke="#e4e4e7" strokeWidth="2" />
+            <circle cx="160" cy="333" r="25" fill="none" stroke="#e4e4e7" strokeWidth="2" />
+            <text x="160" y="289" fill="#ffffff" fontSize="10" textAnchor="middle">AT</text>
+            <text x="160" y="345" fill="#ffffff" fontSize="10" textAnchor="middle">BT</text>
+          </g>
+          <text x="198" y="316" fill="#d4d4d4" fontSize="11">TRAFO</text>
+
+          {/* Barramento 440V */}
+          <line x1="160" y1="358" x2="160" y2="396" {...lineStyle} />
+          <Flow x1={160} y1={358} x2={160} y2={396} dur={1.3} />
+          <line x1="70" y1="396" x2="250" y2="396" {...busbarBTStyle} />
+          <circle cx="160" cy="396" r="5" fill="#fb923c" />
+          <rect x="70" y="384" width="64" height="24" rx="6" fill="#18181b" stroke="#f97316" strokeWidth="1" />
+          <text x="102" y="400" fill="#fdba74" fontSize="10" textAnchor="middle" fontWeight="600" fontFamily={MONO}>440V</text>
+
+          {/* QGBT */}
+          <line x1="160" y1="396" x2="160" y2="444" {...lineStyle} />
+          <Flow x1={160} y1={396} x2={160} y2={444} dur={1.35} />
+          <rect x="153" y="412" width="14" height="14" rx="2" fill="#0c0c0e" stroke="#e4e4e7" strokeWidth="1.5" pointerEvents="none" />
+          <g {...nodeProps('qgbt_fabrica')}>
+            <rect x="60" y="444" width="200" height="58" rx="6" fill="url(#nodeGradM)" stroke="#71717a" strokeWidth="1.5" filter="url(#nodeShadowM)" />
+            <text x="160" y="468" fill="#ffffff" fontSize="15" textAnchor="middle" fontWeight="600">QGBT</text>
+            <text x="160" y="486" fill="#a1a1aa" fontSize="10" textAnchor="middle" letterSpacing="1.5">FÁBRICA</text>
+          </g>
+
+          {/* CCM */}
+          <line x1="160" y1="502" x2="160" y2="534" {...lineStyle} />
+          <Flow x1={160} y1={502} x2={160} y2={534} dur={1.3} />
+          <g {...nodeProps('ccm')}>
+            <rect x="60" y="534" width="200" height="54" rx="6" fill="url(#nodeGradM)" stroke="#52525b" strokeWidth="1.25" filter="url(#nodeShadowM)" />
+            <text x="160" y="556" fill="#ffffff" fontSize="14" textAnchor="middle" fontWeight="600">CCM</text>
+            <text x="160" y="574" fill="#a1a1aa" fontSize="10" textAnchor="middle" letterSpacing="1.5">MOTORES</text>
+          </g>
+
+          {/* Motores */}
+          <line x1="160" y1="588" x2="160" y2="612" {...thinLineStyle} />
+          <line x1="100" y1="612" x2="220" y2="612" {...thinLineStyle} />
+          {[100, 160, 220].map(cx => (
+            <g key={cx}>
+              <line x1={cx} y1={612} x2={cx} y2={630} {...thinLineStyle} />
+              <circle cx={cx} cy={650} r="20" fill="rgba(0,0,0,0.5)" stroke="#d4d4d4" strokeWidth="1.5" />
+              <text x={cx} y={648} fill="#d4d4d4" fontSize="11" textAnchor="middle">M</text>
+              <text x={cx} y={661} fill="#a3a3a3" fontSize="8" textAnchor="middle">3~</text>
+            </g>
+          ))}
+          <text x="160" y="696" fill="#a3a3a3" fontSize="10" textAnchor="middle">MOTORES ELÉTRICOS</text>
+
+          {/* GERADOR (cogeração 13,8kV) */}
+          <line x1="330" y1="132" x2="330" y2="278" {...lineStyle} />
+          <Flow x1={330} y1={278} x2={330} y2={132} dur={1.3} color="#fca5a5" />
+          <rect x="323" y="196" width="14" height="14" rx="2" fill="#0c0c0e" stroke="#e4e4e7" strokeWidth="1.5" pointerEvents="none" />
+          <g {...nodeProps('gerador')}>
+            <circle cx="330" cy="320" r="42" fill="url(#genGradM)" stroke="#f97316" strokeWidth="2.5" filter="url(#nodeShadowM)" />
+            <text x="330" y="316" fill="#ffffff" fontSize="22" textAnchor="middle" fontWeight="600">G</text>
+            <text x="330" y="338" fill="#d4d4d4" fontSize="14" textAnchor="middle">~</text>
+          </g>
+          <text x="330" y="382" fill="#d4d4d4" fontSize="11" textAnchor="middle">GERADOR</text>
+          <text x="330" y="398" fill="#fca5a5" fontSize="10" textAnchor="middle" fontFamily={MONO}>13,8kV</text>
+
+          {/* LEDs de status */}
+          <g pointerEvents="none">
+            {([[246, 38], [246, 192], [246, 456], [246, 546]] as [number, number][]).map(([x, y], i) => (
+              <circle key={i} cx={x} cy={y} r="3.5" fill="#4ade80" style={{ filter: 'drop-shadow(0 0 3px rgba(74,222,128,0.9))' }}>
+                <animate attributeName="opacity" values="1;0.25;1" dur="2.4s" begin={`${i * 0.5}s`} repeatCount="indefinite" />
+              </circle>
+            ))}
+          </g>
+
+          {/* Dica */}
+          <text x="210" y="716" fill="#a3a3a3" fontSize="10" textAnchor="middle">Toque nos equipamentos para conhecer os produtos</text>
+        </svg>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative ${className}`}>
