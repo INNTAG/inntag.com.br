@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 import { Zap } from 'lucide-react';
@@ -32,19 +32,10 @@ interface UnifilarDiagramProps {
   className?: string;
 }
 
-const BASE_VIEW = { x: 0, y: 0, w: 1600, h: 850 };
-
 export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
   const [items, setItems] = useState<UnifilarItem[]>([]);
   const [hoveredItem, setHoveredItem] = useState<UnifilarItem | null>(null);
   const [popupPosition, setPopupPosition] = useState<PopupPosition>({ x: 0, y: 0 });
-
-  // Zoom/pan (viewBox dinâmico) — essencial para legibilidade no mobile
-  const [view, setView] = useState(BASE_VIEW);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const pinchDist = useRef<number | null>(null);
-  const suppressClick = useRef(false);
 
   useEffect(() => {
     fetch('/api/public/unifilar')
@@ -89,106 +80,8 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
     setHoveredItem(null);
   };
 
-  // ---------- Zoom / Pan ----------
-  const zoomLevel = BASE_VIEW.w / view.w;
-
-  const clampView = (v: typeof BASE_VIEW) => {
-    const w = Math.min(BASE_VIEW.w, Math.max(BASE_VIEW.w / 6, v.w));
-    const h = w * (BASE_VIEW.h / BASE_VIEW.w);
-    const x = Math.min(BASE_VIEW.x + BASE_VIEW.w - w * 0.6, Math.max(BASE_VIEW.x - w * 0.4, v.x));
-    const y = Math.min(BASE_VIEW.y + BASE_VIEW.h - h * 0.6, Math.max(BASE_VIEW.y - h * 0.4, v.y));
-    return { x, y, w, h };
-  };
-
-  // Escala px → unidades do viewBox (aprox. uniforme com preserveAspectRatio meet)
-  const pxScale = () => {
-    const el = svgRef.current;
-    if (!el) return 1;
-    const r = el.getBoundingClientRect();
-    return Math.min(r.width / view.w, r.height / view.h) || 1;
-  };
-
-  const zoomAt = (clientX: number, clientY: number, factor: number) => {
-    const el = svgRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const s = pxScale();
-    // ponto do mouse em coordenadas do diagrama (compensando letterbox do "meet")
-    const offX = (r.width - view.w * s) / 2;
-    const offY = (r.height - view.h * s) / 2;
-    const dx = view.x + (clientX - r.left - offX) / s;
-    const dy = view.y + (clientY - r.top - offY) / s;
-    setView(v => {
-      const w = v.w / factor;
-      const h = w * (BASE_VIEW.h / BASE_VIEW.w);
-      return clampView({ x: dx - (dx - v.x) / factor, y: dy - (dy - v.y) / factor, w, h });
-    });
-  };
-
-  const zoomCenter = (factor: number) => {
-    const el = svgRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    zoomAt(r.left + r.width / 2, r.top + r.height / 2, factor);
-  };
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.current.size === 1) suppressClick.current = false;
-    if (pointers.current.size === 2) {
-      const [a, b] = [...pointers.current.values()];
-      pinchDist.current = Math.hypot(a.x - b.x, a.y - b.y);
-    }
-  };
-
-  const onPointerMove = (e: React.PointerEvent) => {
-    const prev = pointers.current.get(e.pointerId);
-    if (!prev) return;
-    const cur = { x: e.clientX, y: e.clientY };
-    pointers.current.set(e.pointerId, cur);
-
-    if (pointers.current.size === 2 && pinchDist.current) {
-      const [a, b] = [...pointers.current.values()];
-      const d = Math.hypot(a.x - b.x, a.y - b.y);
-      if (d > 0) {
-        zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, d / pinchDist.current);
-        pinchDist.current = d;
-        suppressClick.current = true;
-      }
-      return;
-    }
-
-    const dx = cur.x - prev.x;
-    const dy = cur.y - prev.y;
-    if (Math.abs(dx) + Math.abs(dy) > 3) suppressClick.current = true;
-    if (zoomLevel > 1.01) {
-      const s = pxScale();
-      setView(v => clampView({ ...v, x: v.x - dx / s, y: v.y - dy / s }));
-    }
-  };
-
-  const onPointerUp = (e: React.PointerEvent) => {
-    pointers.current.delete(e.pointerId);
-    if (pointers.current.size < 2) pinchDist.current = null;
-  };
-
-  // Wheel zoom (listener não-passivo para poder prevenir o scroll da página)
-  useEffect(() => {
-    const el = svgRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.15 : 1 / 1.15);
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
-
   // ---------- Interação dos nós (clique + teclado) ----------
   const openItem = (key: string) => {
-    if (suppressClick.current) return;
     const item = items.find(i => i.item_key === key);
     if (item?.product_slug) window.location.href = `/produtos/${item.product_slug}`;
   };
@@ -280,16 +173,9 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
 
       {/* Diagram SVG */}
       <svg
-        ref={svgRef}
-        viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
+        viewBox="0 0 1600 850"
         className="w-full h-full"
         preserveAspectRatio="xMidYMid meet"
-        style={{ touchAction: 'none', cursor: zoomLevel > 1.01 ? 'grab' : 'default' }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onClickCapture={(e) => { if (suppressClick.current) { e.preventDefault(); e.stopPropagation(); } }}
       >
         <defs>
           {/* Nós em vidro grafite */}
@@ -744,30 +630,6 @@ export function UnifilarDiagram({ className = '' }: UnifilarDiagramProps) {
         </g>
 
       </svg>
-
-      {/* Controles de zoom */}
-      <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-20">
-        <button
-          type="button"
-          aria-label="Ampliar diagrama"
-          onClick={() => zoomCenter(1.35)}
-          className="w-9 h-9 rounded-lg bg-neutral-900/80 backdrop-blur border border-neutral-700 text-white text-lg leading-none hover:border-orange-500 hover:text-orange-400 transition-colors"
-        >+</button>
-        <button
-          type="button"
-          aria-label="Reduzir diagrama"
-          onClick={() => zoomCenter(1 / 1.35)}
-          className="w-9 h-9 rounded-lg bg-neutral-900/80 backdrop-blur border border-neutral-700 text-white text-lg leading-none hover:border-orange-500 hover:text-orange-400 transition-colors"
-        >−</button>
-        {zoomLevel > 1.01 && (
-          <button
-            type="button"
-            aria-label="Restaurar visão completa"
-            onClick={() => setView(BASE_VIEW)}
-            className="w-9 h-9 rounded-lg bg-neutral-900/80 backdrop-blur border border-neutral-700 text-neutral-300 text-[10px] font-semibold hover:border-orange-500 hover:text-orange-400 transition-colors"
-          >1:1</button>
-        )}
-      </div>
     </div>
   );
 }
