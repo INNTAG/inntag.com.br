@@ -55,7 +55,7 @@ Com uma equipe de engenheiros altamente qualificados e certificados, garantimos 
     { value: getCompanyAgeDisplay(), label: 'Anos de Experiência', suffix: '' },
     { value: '1.000+', label: 'Projetos Executados', suffix: '' },
     { value: '500+', label: 'Clientes Atendidos', suffix: '' },
-    { value: '+10', label: 'Países Atendidos', suffix: '' },
+    { value: '10+', label: 'Países Atendidos', suffix: '' },
   ],
   
   differentiators: [
@@ -110,7 +110,7 @@ export const SERVICES = [
       'Testes e comissionamento',
     ],
     image: ASSETS.machinesIndustrial,
-    accent: '+10 Anos de Expertise',
+    accent: '10+ Anos de Experiência',
   },
   {
     id: 'servicos',
@@ -235,7 +235,7 @@ export const CONTACT = {
   info: {
     email: 'contato@inntag.com.br',
     phone: '+55 (19) 3648-3700',
-    whatsapp: '+55 (19) 99999-9999',
+    whatsapp: '+55 (19) 3648-3700',
     address: 'Av. de Cillo, 4034 - Pq Universitário, Americana/SP - CEP 13467-600',
   },
   
@@ -257,11 +257,11 @@ export const FOOTER = {
     { label: 'Serviços Técnicos', href: '/servicos' },
     { label: 'Máquinas Rotativas', href: '/maquinas' },
     { label: 'Clientes', href: '/clientes' },
-    { label: 'Portfolio', href: '/portfolio' },
+    { label: 'Portfólio', href: '/portfolio' },
   ],
-  
+
   company_links: [
-    { label: 'Quem Somos', href: '/#sobre' },
+    { label: 'Quem Somos', href: '/portfolio' },
     { label: 'Projetos', href: '/portfolio' },
     { label: 'Trabalhe Conosco', href: '/contato' },
     { label: 'Contato', href: '/contato' },
@@ -270,7 +270,7 @@ export const FOOTER = {
   contact: {
     email: 'contato@inntag.com.br',
     phone: '+55 (19) 3648-3700',
-    whatsapp: '+55 (19) 99999-9999',
+    whatsapp: '+55 (19) 3648-3700',
     address: 'Av. de Cillo, 4034 - Pq Universitário, Americana/SP - CEP 13467-600',
   },
   

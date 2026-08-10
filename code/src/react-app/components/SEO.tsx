@@ -34,8 +34,8 @@ const DEFAULT_ALTERNATES = [
 
 export function SEO({
   title,
-  description = 'O Grupo INNTAG oferece soluções completas em energia solar, painéis elétricos, máquinas rotativas e serviços de manutenção. Mais de 17 anos de experiência e 1.000+ projetos executados.',
-  keywords = 'energia solar, painéis elétricos, máquinas rotativas, manutenção elétrica, INNTAG, soluções elétricas',
+  description = 'O Grupo INNTAG projeta e fabrica painéis elétricos industriais, presta serviços técnicos de campo e mantém máquinas rotativas de grande porte. 17+ anos de experiência e mais de 1.000 projetos entregues.',
+  keywords = 'painéis elétricos industriais, QGBT, CCM, cubículos de média tensão, máquinas rotativas, manutenção elétrica industrial, INNTAG',
   canonical,
   image = DEFAULT_IMAGE,
   imageAlt = 'Grupo INNTAG - Soluções Elétricas Industriais',
@@ -48,7 +48,9 @@ export function SEO({
   alternates,
   schema
 }: SEOProps) {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | Soluções Elétricas, Energia Solar, Painéis e Máquinas`;
+  // Evita marca duplicada ("X | INNTAG | Grupo INNTAG") quando a página já traz o sufixo
+  const cleanTitle = title?.replace(/\s*\|\s*(Grupo\s+)?INNTAG(\s+Soluções\s+Elétricas)?\s*$/i, '').trim();
+  const fullTitle = cleanTitle ? `${cleanTitle} | ${SITE_NAME}` : `${SITE_NAME} | Engenharia Elétrica Industrial: Painéis, Máquinas e Serviços`;
   const canonicalPath = canonical || '/';
   const fullCanonical = `${BASE_URL}${canonicalPath}`;
   

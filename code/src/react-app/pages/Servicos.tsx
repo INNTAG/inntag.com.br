@@ -303,8 +303,8 @@ export default function ServicosPage() {
               <p className="text-white/60 text-xs md:text-sm">Tempo de Resposta</p>
             </div>
             <div>
-              <p className="text-2xl md:text-4xl font-bold text-white">100%</p>
-              <p className="text-white/60 text-xs md:text-sm">Certificados</p>
+              <p className="text-2xl md:text-4xl font-bold text-white">17+</p>
+              <p className="text-white/60 text-xs md:text-sm">Anos de Experiência</p>
             </div>
             <div>
               <p className="text-2xl md:text-4xl font-bold text-white">100%</p>

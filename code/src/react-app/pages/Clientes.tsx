@@ -5,7 +5,7 @@ import { SEO, schemas } from '@/react-app/components/SEO';
 import { ASSETS } from '@/react-app/data/content';
 import { useBackgrounds } from '@/react-app/hooks/useBackgrounds';
 import { getCompanyAge } from '@/react-app/utils/companyAge';
-import { Loader2, Building2, Factory, Zap, Anchor, Leaf, Fuel, Mountain } from 'lucide-react';
+import { Factory, Zap, Anchor, Leaf, Fuel, Mountain } from 'lucide-react';
 
 interface Client {
   id: number;
@@ -126,7 +126,7 @@ export default function ClientesPage() {
               <p className="text-white/60 text-sm">Clientes Ativos</p>
             </div>
             <div>
-              <p className="text-4xl font-bold text-white">+10</p>
+              <p className="text-4xl font-bold text-white">10+</p>
               <p className="text-white/60 text-sm">Países Atendidos</p>
             </div>
             <div>
@@ -148,7 +148,8 @@ export default function ClientesPage() {
         </section>
       )}
 
-      {/* Client Logos */}
+      {/* Client Logos — a seção só existe publicamente quando há clientes cadastrados */}
+      {!loading && clients.length > 0 && (
       <section className="py-24">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -162,19 +163,8 @@ export default function ClientesPage() {
               Conheça algumas das empresas que confiam na INNTAG para suas soluções elétricas.
             </p>
           </div>
-          
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-            </div>
-          ) : clients.length === 0 ? (
-            <div className="text-center py-16 bg-neutral-50 rounded-3xl">
-              <Building2 className="w-16 h-16 text-neutral-300 mx-auto mb-4" />
-              <p className="text-neutral-500">
-                Cadastre clientes no painel administrativo para exibi-los aqui.
-              </p>
-            </div>
-          ) : (
+
+          {(
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {clients.map((cliente) => (
                 <div 
@@ -198,6 +188,7 @@ export default function ClientesPage() {
           )}
         </div>
       </section>
+      )}
 
       {/* Sectors */}
       <section className="py-24 bg-neutral-950">
@@ -250,7 +241,7 @@ export default function ClientesPage() {
               <div className="text-neutral-600 mt-2 text-sm md:text-base font-medium">Anos de Mercado</div>
             </div>
             <div className="p-4 md:p-8">
-              <div className="text-4xl md:text-6xl font-bold text-orange-500">+10</div>
+              <div className="text-4xl md:text-6xl font-bold text-orange-500">10+</div>
               <div className="text-neutral-600 mt-2 text-sm md:text-base font-medium">Países Atendidos</div>
             </div>
           </div>

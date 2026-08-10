@@ -108,8 +108,8 @@ export function ContactSection() {
               <Phone size={28} className="text-accent group-hover:text-white transition-colors" />
             </div>
             <h3 className="text-xl font-bold mt-6 group-hover:text-white transition-colors">Telefone</h3>
-            <a 
-              href={`tel:${contactInfo.phone}`} 
+            <a
+              href={`tel:${contactInfo.phone.replace(/[^+\d]/g, '')}`}
               className="text-muted-foreground group-hover:text-white/80 mt-2 block transition-colors"
             >
               {contactInfo.phone}
@@ -293,8 +293,8 @@ export function Footer() {
                 <Phone size={16} className="text-accent flex-shrink-0 mt-0.5 md:w-[18px] md:h-[18px]" />
                 <div>
                   <p className="text-[10px] md:text-xs text-background/40 uppercase tracking-wide">Telefone</p>
-                  <a 
-                    href={`tel:${contact.phone}`}
+                  <a
+                    href={`tel:${contact.phone.replace(/[^+\d]/g, '')}`}
                     className="text-background/80 hover:text-accent transition-colors text-xs md:text-sm"
                   >
                     {contact.phone}

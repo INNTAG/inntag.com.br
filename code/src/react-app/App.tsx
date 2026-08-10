@@ -9,6 +9,7 @@ import ConfigLayout from "@/react-app/pages/config/ConfigLayout";
 // Páginas públicas (carregadas sob demanda — reduz o bundle inicial)
 const ProdutosPage = lazy(() => import("@/react-app/pages/Produtos"));
 const ServicosPage = lazy(() => import("@/react-app/pages/Servicos"));
+const NotFoundPage = lazy(() => import("@/react-app/pages/NotFound"));
 const MaquinasPage = lazy(() => import("@/react-app/pages/Maquinas"));
 const ClientesPage = lazy(() => import("@/react-app/pages/Clientes"));
 const PortfolioPage = lazy(() => import("@/react-app/pages/Portfolio"));
@@ -104,6 +105,9 @@ function AppContent() {
           <Route path="/config/projeto/:projectId" element={<ProjetoFullScreen />} />
           <Route path="/config/painel/:panelId" element={<PainelDetail />} />
           <Route path="/config/servico/:serviceId" element={<ServicoDetail />} />
+
+          {/* 404 institucional */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
       {/* WhatsApp floating button - only on public pages */}

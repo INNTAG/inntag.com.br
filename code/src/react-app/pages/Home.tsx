@@ -9,7 +9,7 @@ import { getCompanyAge } from '@/react-app/utils/companyAge';
 import { useLanguage } from '@/react-app/contexts/LanguageContext';
 import { useBackgrounds } from '@/react-app/hooks/useBackgrounds';
 import { ArrowRight, ArrowUpRight, Shield, Clock, Award, Wrench } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // Intersection observer hook for reveal animations
 function useReveal() {
@@ -43,6 +43,19 @@ export default function Home() {
   } = useBackgrounds();
   const companyAge = getCompanyAge();
 
+  // Destaques reais publicados no painel (a seção fica oculta enquanto não houver artigos)
+  interface HomeArticle { id: number; slug: string; title: string; excerpt: string; category: string; image_url?: string; }
+  const [articles, setArticles] = useState<HomeArticle[]>([]);
+  useEffect(() => {
+    fetch('/api/public/articles')
+      .then(r => r.json())
+      .then(d => setArticles(Array.isArray(d) ? d.slice(0, 3) : []))
+      .catch(() => {});
+  }, []);
+  const articleCategoryLabels: Record<string, string> = {
+    noticia: 'Notícia', artigo: 'Artigo Técnico', case: 'Case de Sucesso', release: 'Press Release'
+  };
+
   // Dynamic backgrounds from database
   const heroImage = getBackground('home', 'hero', ASSETS.heroMain);
   const qualityImage = getBackground('home', 'quality', ASSETS.ccmPanelBg);
@@ -62,7 +75,7 @@ export default function Home() {
     value: '500+',
     label: t('stats.clients')
   }, {
-    value: '+10',
+    value: '10+',
     label: t('stats.countries')
   }];
   return <div ref={revealRef} className="min-h-screen bg-[#fafafa]">
@@ -149,7 +162,7 @@ export default function Home() {
               <span className="text-red-500 text-sm font-semibold tracking-[0.2em] uppercase">Sistema Elétrico</span>
               <div className="w-8 h-px bg-red-500" />
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight">Sua Indústria, Nossos Produtos e Servicos</h2>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight">Sua Indústria, Nossos Produtos e Serviços</h2>
             <p className="text-neutral-400 text-lg mt-4 max-w-2xl mx-auto">
               Clique nos elementos para conhecer nossos produtos e soluções
             </p>
@@ -549,14 +562,14 @@ export default function Home() {
 
               <div className="grid grid-cols-2 gap-4 mb-10">
                 {[{
-                value: '+10',
-                label: 'Anos de Expertise'
+                value: '10+',
+                label: 'Anos de Experiência'
               }, {
                 value: '500+',
-                label: 'Máquinas Atendidas'
+                label: 'Máquinas Reparadas'
               }, {
-                value: '100%',
-                label: 'Equipe Certificada'
+                value: '50MW',
+                label: 'Maior Motor Atendido'
               }, {
                 value: 'Offshore',
                 label: 'Atuação Especializada'
@@ -591,8 +604,8 @@ export default function Home() {
                 </div>
                 {/* Accent Badge */}
                 <div className="absolute -bottom-6 -left-6 bg-red-500 rounded-2xl p-6 shadow-2xl">
-                  <div className="text-4xl font-bold text-white">+10</div>
-                  <div className="text-white/80 text-sm mt-1">Anos de Expertise</div>
+                  <div className="text-4xl font-bold text-white">10+</div>
+                  <div className="text-white/80 text-sm mt-1">Anos de Experiência</div>
                 </div>
               </div>
             </div>
@@ -645,7 +658,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Destaques Section */}
+      {/* Destaques Section — conteúdo real publicado no painel; oculta quando vazio */}
+      {articles.length > 0 && (
       <section className="py-24 md:py-32 bg-neutral-50">
         <div className="max-w-7xl mx-auto px-8">
           <div className="reveal-item opacity-0 translate-y-8 transition-all duration-700 text-center mb-16">
@@ -662,55 +676,42 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Tabs */}
-          <div className="flex justify-center gap-2 mb-12">
-            {['Todos', 'Notícias', 'Artigos', 'Cases'].map((tab, i) => <button key={tab} className={`px-5 py-2.5 text-sm font-medium rounded-full transition-all ${i === 0 ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'}`}>
-                {tab}
-              </button>)}
-          </div>
-
           {/* Articles Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Featured Article */}
-            <div className="reveal-item opacity-0 translate-y-8 transition-all duration-700 delay-100 md:col-span-2 lg:col-span-2 group">
+            <Link to={`/destaques/${articles[0].slug}`} className="reveal-item opacity-0 translate-y-8 transition-all duration-700 delay-100 md:col-span-2 lg:col-span-2 group block">
               <div className="relative h-[400px] rounded-3xl overflow-hidden bg-neutral-900">
-                <img src={ASSETS.heroMain} alt="Destaque" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+                <img src={articles[0].image_url || ASSETS.heroMain} alt={articles[0].title} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
                 <div className="absolute inset-0 p-8 flex flex-col justify-end">
                   <span className="inline-block bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-4 w-fit">
-                    Destaque
+                    {articleCategoryLabels[articles[0].category] || 'Destaque'}
                   </span>
                   <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                    INNTAG expande operações para mercado internacional
+                    {articles[0].title}
                   </h3>
                   <p className="text-white text-lg max-w-xl">
-                    Nova unidade de negócios atenderá clientes em mais de 10 países da América Latina.
+                    {articles[0].excerpt}
                   </p>
                 </div>
               </div>
-            </div>
+            </Link>
 
             {/* Side Articles */}
             <div className="reveal-item opacity-0 translate-y-8 transition-all duration-700 delay-200 flex flex-col gap-6">
-              <article className="group flex-1 bg-white rounded-2xl p-6 border border-neutral-200 hover:border-red-200 hover:shadow-lg transition-all">
-                <span className="text-xs font-semibold text-red-600 uppercase tracking-wider">Artigo Técnico</span>
-                <h4 className="text-lg font-bold text-neutral-900 mt-3 mb-2 group-hover:text-red-600 transition-colors">
-                  Eficiência energética em sistemas de excitação
-                </h4>
-                <p className="text-neutral-500 text-sm line-clamp-2">
-                  Como otimizar o consumo de energia em geradores síncronos industriais.
-                </p>
-              </article>
-              
-              <article className="group flex-1 bg-white rounded-2xl p-6 border border-neutral-200 hover:border-red-200 hover:shadow-lg transition-all">
-                <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Case de Sucesso</span>
-                <h4 className="text-lg font-bold text-neutral-900 mt-3 mb-2 group-hover:text-red-600 transition-colors">
-                  Modernização de subestação em usina termelétrica
-                </h4>
-                <p className="text-neutral-500 text-sm line-clamp-2">
-                  Projeto executado em tempo recorde durante parada programada.
-                </p>
-              </article>
+              {articles.slice(1, 3).map(article => (
+                <Link key={article.id} to={`/destaques/${article.slug}`} className="group flex-1 bg-white rounded-2xl p-6 border border-neutral-200 hover:border-red-200 hover:shadow-lg transition-all block">
+                  <span className="text-xs font-semibold text-red-600 uppercase tracking-wider">
+                    {articleCategoryLabels[article.category] || 'Destaque'}
+                  </span>
+                  <h4 className="text-lg font-bold text-neutral-900 mt-3 mb-2 group-hover:text-red-600 transition-colors">
+                    {article.title}
+                  </h4>
+                  <p className="text-neutral-500 text-sm line-clamp-2">
+                    {article.excerpt}
+                  </p>
+                </Link>
+              ))}
             </div>
           </div>
 
@@ -722,6 +723,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* CTA - Full Width */}
       <section className="relative py-32 md:py-40 overflow-hidden">

@@ -100,7 +100,7 @@ export default function PortfolioPage() {
         cta={{ label: 'Solicitar Orçamento', href: '/contato' }}
         stats={[
           { value: '1.000+', label: 'Projetos Entregues' },
-          { value: '100%', label: 'Compromisso' },
+          { value: `${getCompanyAge()}+`, label: 'Anos de Atuação' },
         ]}
       />
 

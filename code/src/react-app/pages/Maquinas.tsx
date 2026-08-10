@@ -75,7 +75,7 @@ const MAQUINAS = [
       'Atendimento embarcado e em dique',
     ],
     benefits: [
-      { icon: Anchor, title: 'Experiência', desc: '+10 anos no setor offshore' },
+      { icon: Anchor, title: 'Experiência', desc: '10+ anos no setor offshore' },
       { icon: Shield, title: 'Certificação', desc: 'DNV, ABS, Lloyd\'s, BV' },
       { icon: Settings, title: 'Mobilidade', desc: 'Equipe para atendimento embarcado' },
     ],
@@ -353,7 +353,7 @@ export default function MaquinasPage() {
           
           <div className="grid grid-cols-3 gap-4 md:gap-12 mt-16">
             <div>
-              <p className="text-2xl md:text-4xl font-bold text-white">+10</p>
+              <p className="text-2xl md:text-4xl font-bold text-white">10+</p>
               <p className="text-white/60 text-xs md:text-sm">Anos de Experiência</p>
             </div>
             <div>

@@ -119,7 +119,7 @@ export default function ContatoPage() {
       <section className="py-12 bg-neutral-950">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            <a href={`tel:${info.phone}`} className="p-4 md:p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group flex items-center gap-3 md:gap-4">
+            <a href={`tel:${info.phone.replace(/[^+\d]/g, '')}`} className="p-4 md:p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group flex items-center gap-3 md:gap-4">
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-orange-500/20 flex items-center justify-center flex-shrink-0">
                 <Phone className="text-orange-400" size={18} />
               </div>
@@ -155,7 +155,7 @@ export default function ContatoPage() {
               </div>
               <div className="min-w-0">
                 <p className="text-white/60 text-xs md:text-sm">Horário</p>
-                <p className="text-white font-semibold text-sm md:text-base">Seg-Sex</p>
+                <p className="text-white font-semibold text-sm md:text-base">Seg–Sex, horário comercial</p>
               </div>
             </div>
           </div>
@@ -290,10 +290,12 @@ export default function ContatoPage() {
                     <p className="text-neutral-500 text-sm mb-1">Telefone Principal</p>
                     <p className="text-neutral-900 font-medium">{info.phone}</p>
                   </div>
-                  <div>
-                    <p className="text-neutral-500 text-sm mb-1">Telefone Alternativo</p>
-                    <p className="text-neutral-900 font-medium">{info.phone2}</p>
-                  </div>
+                  {info.phone2 && info.phone2.replace(/\D/g, '') !== info.phone.replace(/\D/g, '') && (
+                    <div>
+                      <p className="text-neutral-500 text-sm mb-1">Telefone Alternativo</p>
+                      <p className="text-neutral-900 font-medium">{info.phone2}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-neutral-500 text-sm mb-1">E-mail Principal</p>
                     <p className="text-neutral-900 font-medium text-sm">{info.email}</p>
