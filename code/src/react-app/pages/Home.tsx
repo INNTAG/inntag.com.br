@@ -150,7 +150,7 @@ export default function Home() {
       <section className="relative py-16 md:py-24 bg-neutral-950 overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 bg-cover bg-center opacity-30" style={{
-        backgroundImage: 'url(/api/files/lp-hero-panels.png)'
+        backgroundImage: 'url(/api/files/real-barramentos-fabrica.jpg)'
       }} />
         <div className="absolute inset-0 bg-black/60" />
         

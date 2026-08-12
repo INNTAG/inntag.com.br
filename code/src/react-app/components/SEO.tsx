@@ -21,7 +21,7 @@ interface SEOProps {
 }
 
 const BASE_URL = 'https://www.inntag.com.br';
-const DEFAULT_IMAGE = '/api/files/hero-panels-inntag.png';
+const DEFAULT_IMAGE = '/api/files/hero-paineis-mt.jpg';
 const SITE_NAME = 'Grupo INNTAG';
 
 // Default language alternates
@@ -93,7 +93,7 @@ export function SEO({
       <meta property="og:locale:alternate" content="es_ES" />
       <meta property="og:image" content={fullImage} />
       <meta property="og:image:secure_url" content={fullImage} />
-      <meta property="og:image:type" content="image/png" />
+      <meta property="og:image:type" content={fullImage.endsWith('.png') ? 'image/png' : 'image/jpeg'} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:image:alt" content={imageAlt} />

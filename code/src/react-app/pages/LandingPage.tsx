@@ -9,65 +9,63 @@ import { ArrowRight, Check, MapPin, Phone, Shield, Award, ChevronRight, Loader2,
 // INNTAG vertical-specific hero images - realistic industrial equipment
 const ASSET_BASE = '/api/files';
 
-// Vertical-based images (PAINÉIS, SERVIÇOS, MÁQUINAS)
+// Vertical-based images (PAINÉIS, SERVIÇOS, MÁQUINAS) — somente fotos reais da fábrica/campo
 const VERTICAL_HERO_IMAGES = {
   paineis: [
-    `${ASSET_BASE}/lp-hero-panels.png`,         // Electrical control panel
-    `${ASSET_BASE}/hero-panels-inntag.png`,     // CCM room
-    `${ASSET_BASE}/ccm-panel-bg.png`,           // CCM panel closeup
-    `${ASSET_BASE}/lp-hero-industrial.png`,     // Control panel room
+    `${ASSET_BASE}/hero-paineis-mt.jpg`,            // Painéis MT reais
+    `${ASSET_BASE}/real-paineis-xgear.jpg`,         // Painéis X-Gear reais
+    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,   // Barramentos na fábrica
+    `${ASSET_BASE}/real-tc-vermelho.jpg`,           // TC em bancada
   ],
   field_service: [
-    `${ASSET_BASE}/services-maintenance.png`,   // Engineer with tablet
-    `${ASSET_BASE}/lp-hero-energy.png`,         // Electrical substation
-    `${ASSET_BASE}/engineer.jpg`,               // Engineer inspecting
-    `${ASSET_BASE}/servicos.png`,               // Services image
+    `${ASSET_BASE}/servico-subestacao.webp`,        // Serviço em subestação (real)
+    `${ASSET_BASE}/real-disjuntor-abw.jpg`,         // Disjuntor em manutenção
+    `${ASSET_BASE}/hero-paineis-mt.jpg`,            // Painéis MT reais
   ],
   maquinas: [
-    `${ASSET_BASE}/machines-industrial.png`,    // Industrial motor
-    `${ASSET_BASE}/lp-hero-factory.png`,        // Factory interior
-    `${ASSET_BASE}/lp-hero-industrial.png`,     // Industrial equipment
+    `${ASSET_BASE}/maquina-motor.jpg`,              // Motor industrial real
+    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,   // Fábrica
   ],
 };
 
-// Industry-context images - secondary choice based on city industry
+// Industry-context images - secondary choice based on city industry (fotos reais)
 const INDUSTRY_HERO_IMAGES = {
   petrochemical: [
-    `${ASSET_BASE}/lp-hero-oil.png`,            // Oil platform
-    `${ASSET_BASE}/lp-hero-energy.png`,         // Substation
+    `${ASSET_BASE}/servico-subestacao.webp`,
+    `${ASSET_BASE}/hero-paineis-mt.jpg`,
   ],
   mining: [
-    `${ASSET_BASE}/lp-hero-mining.png`,         // Mining operation
-    `${ASSET_BASE}/lp-hero-industrial.png`,     // Industrial
+    `${ASSET_BASE}/maquina-motor.jpg`,
+    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,
   ],
   steel: [
-    `${ASSET_BASE}/lp-hero-factory.png`,        // Factory
-    `${ASSET_BASE}/lp-hero-industrial.png`,     // Industrial
+    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,
+    `${ASSET_BASE}/hero-paineis-mt.jpg`,
   ],
   port: [
-    `${ASSET_BASE}/lp-hero-industrial.png`,     // Industrial
-    `${ASSET_BASE}/lp-hero-factory.png`,        // Factory
+    `${ASSET_BASE}/maquina-motor.jpg`,
+    `${ASSET_BASE}/real-paineis-xgear.jpg`,
   ],
   automotive: [
-    `${ASSET_BASE}/lp-hero-factory.png`,        // Factory
-    `${ASSET_BASE}/lp-hero-industrial.png`,     // Industrial
+    `${ASSET_BASE}/real-paineis-xgear.jpg`,
+    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,
   ],
   agro: [
-    `${ASSET_BASE}/lp-hero-agro.png`,           // Agricultural plant
-    `${ASSET_BASE}/lp-hero-factory.png`,        // Factory
+    `${ASSET_BASE}/servico-subestacao.webp`,
+    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,
   ],
   food: [
-    `${ASSET_BASE}/lp-hero-factory.png`,        // Factory
-    `${ASSET_BASE}/lp-hero-industrial.png`,     // Industrial
+    `${ASSET_BASE}/real-paineis-xgear.jpg`,
+    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,
   ],
   energy: [
-    `${ASSET_BASE}/lp-hero-energy.png`,         // Substation
-    `${ASSET_BASE}/lp-hero-panels.png`,         // Panels
+    `${ASSET_BASE}/servico-subestacao.webp`,
+    `${ASSET_BASE}/hero-paineis-mt.jpg`,
   ],
   default: [
-    `${ASSET_BASE}/lp-hero-panels.png`,         // Panels
-    `${ASSET_BASE}/lp-hero-industrial.png`,     // Industrial
-    `${ASSET_BASE}/hero-panels-inntag.png`,     // CCM room
+    `${ASSET_BASE}/hero-paineis-mt.jpg`,
+    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,
+    `${ASSET_BASE}/real-paineis-xgear.jpg`,
   ],
 };
 

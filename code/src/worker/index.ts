@@ -18,6 +18,10 @@ app.use("*", async (c, next) => {
       !new URL(c.req.url).pathname.startsWith("/api/files/")) {
     c.header("Cache-Control", "no-cache");
   }
+  // HTML servido pelo worker (fallback SPA) recebe a mesma CSP do _headers estático
+  if ((c.res.headers.get("content-type") || "").includes("text/html")) {
+    c.header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https:; frame-src https://maps.google.com https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
+  }
 });
 
 // Apex -> www: o site canônico é https://www.inntag.com.br (evita conteúdo duplicado / SEO).
@@ -65,6 +69,47 @@ async function cleanupExpiredSessions(db: any) {
   await db.prepare("DELETE FROM admin_sessions WHERE expires_at < datetime('now')").run();
 }
 
+// ===== Hash de senhas (PBKDF2-SHA256 via Web Crypto) =====
+// Formato armazenado: pbkdf2$<iterações>$<salt-hex>$<hash-hex>
+// Senhas legadas em texto puro são aceitas e convertidas para hash no primeiro login.
+const PBKDF2_ITERATIONS = 100000;
+
+function bytesToHex(buf: ArrayBuffer | Uint8Array): string {
+  return [...new Uint8Array(buf as ArrayBuffer)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function derivePbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<string> {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: salt as BufferSource, iterations }, key, 256);
+  return bytesToHex(bits);
+}
+
+async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const hash = await derivePbkdf2(password, salt, PBKDF2_ITERATIONS);
+  return `pbkdf2$${PBKDF2_ITERATIONS}$${bytesToHex(salt)}$${hash}`;
+}
+
+async function verifyPassword(password: string, stored: string | null | undefined): Promise<{ ok: boolean; needsUpgrade: boolean }> {
+  if (!stored) return { ok: false, needsUpgrade: false };
+  if (stored.startsWith('pbkdf2$')) {
+    const parts = stored.split('$');
+    if (parts.length !== 4) return { ok: false, needsUpgrade: false };
+    const iterations = parseInt(parts[1], 10);
+    const salt = new Uint8Array((parts[2].match(/.{2}/g) || []).map(h => parseInt(h, 16)));
+    const hash = await derivePbkdf2(password, salt, iterations);
+    return { ok: hash === parts[3], needsUpgrade: false };
+  }
+  // Legado 1: SHA-256 com salt fixo (usuários do portal do cliente)
+  if (/^[0-9a-f]{64}$/.test(stored)) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password + 'inntag_salt_2024'));
+    const legacyHex = bytesToHex(digest);
+    return { ok: legacyHex === stored, needsUpgrade: legacyHex === stored };
+  }
+  // Legado 2: texto puro
+  return { ok: stored === password, needsUpgrade: stored === password };
+}
+
 // Admin login with email/username + password
 app.post("/api/admin/login", async (c) => {
   const body = await c.req.json();
@@ -100,11 +145,17 @@ app.post("/api/admin/login", async (c) => {
       return c.json({ error: "Usuário não encontrado" }, 401);
     }
 
-    if (!admin.password_hash || admin.password_hash !== password) {
+    const check = await verifyPassword(password, admin.password_hash);
+    if (!check.ok) {
       await recordFail();
       return c.json({ error: "Senha inválida" }, 401);
     }
-    
+    // Senha legada em texto puro: converte para hash agora
+    if (check.needsUpgrade) {
+      await c.env.DB.prepare("UPDATE admin_users SET password_hash = ? WHERE id = ?")
+        .bind(await hashPassword(password), admin.id).run();
+    }
+
     // Generate session token and save to database
     const token = generateToken();
     await createAdminSession(c.env.DB, token, admin.email, admin.name || 'Administrador', admin.permissions || 'all');
@@ -126,10 +177,16 @@ app.post("/api/admin/login", async (c) => {
     "SELECT setting_value FROM app_settings WHERE setting_key = 'admin_password'"
   ).first() as { setting_value: string } | null;
   
-  const adminPassword = setting?.setting_value;
-  if (!adminPassword || password !== adminPassword) {
+  const masterCheck = await verifyPassword(password, setting?.setting_value);
+  if (!masterCheck.ok) {
     await recordFail();
     return c.json({ error: "Senha inválida" }, 401);
+  }
+  // Senha master legada em texto puro: converte para hash agora
+  if (masterCheck.needsUpgrade) {
+    await c.env.DB.prepare(
+      "UPDATE app_settings SET setting_value = ?, updated_at = CURRENT_TIMESTAMP WHERE setting_key = 'admin_password'"
+    ).bind(await hashPassword(password)).run();
   }
 
   // Generate session token for master access and save to database
@@ -211,14 +268,15 @@ app.put("/api/admin/settings/password", async (c) => {
     "SELECT setting_value FROM app_settings WHERE setting_key = 'admin_password'"
   ).first() as { setting_value: string } | null;
   
-  if (!setting || setting.setting_value !== currentPassword) {
+  const currentCheck = await verifyPassword(currentPassword, setting?.setting_value);
+  if (!currentCheck.ok) {
     return c.json({ error: "Senha atual incorreta" }, 401);
   }
 
-  // Update password
+  // Update password (sempre armazenada como hash)
   await c.env.DB.prepare(
     "UPDATE app_settings SET setting_value = ?, updated_at = CURRENT_TIMESTAMP WHERE setting_key = 'admin_password'"
-  ).bind(newPassword).run();
+  ).bind(await hashPassword(newPassword)).run();
 
   return c.json({ success: true });
 });
@@ -279,7 +337,7 @@ app.post("/api/admin/users", adminMiddleware, async (c) => {
     body.email,
     body.name || null,
     body.role || 'admin',
-    body.password || null,
+    body.password ? await hashPassword(body.password) : null,
     body.permissions || 'all'
   ).first();
   
@@ -318,7 +376,7 @@ app.put("/api/admin/users/:id", adminMiddleware, async (c) => {
   // Only update password if provided
   if (passwordProvided) {
     query += ", password_hash = ?";
-    params.push(body.password.trim());
+    params.push(await hashPassword(body.password.trim()));
     console.log("Password will be updated for user", id);
   }
   
@@ -1370,19 +1428,6 @@ app.put("/api/admin/content", adminMiddleware, async (c) => {
 
 // ============ CLIENT USERS ============
 
-// Simple password hashing (for production, use bcrypt or similar)
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password + "inntag_salt_2024");
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  const computedHash = await hashPassword(password);
-  return computedHash === hash;
-}
-
 app.get("/api/admin/client-users", adminMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(`
     SELECT cu.id, cu.username, cu.email, cu.name, cu.client_id, cu.is_active, cu.created_at, c.name as client_name 
@@ -1466,9 +1511,14 @@ app.post("/api/portal/login", async (c) => {
     return c.json({ error: "Usuário sem senha configurada" }, 401);
   }
   
-  const valid = await verifyPassword(password, user.password_hash);
-  if (!valid) {
+  const clientCheck = await verifyPassword(password, user.password_hash);
+  if (!clientCheck.ok) {
     return c.json({ error: "Senha incorreta" }, 401);
+  }
+  // Hash legado: converte para PBKDF2 no primeiro login
+  if (clientCheck.needsUpgrade) {
+    await c.env.DB.prepare("UPDATE client_users SET password_hash = ? WHERE id = ?")
+      .bind(await hashPassword(password), user.id).run();
   }
   
   // Create simple session token

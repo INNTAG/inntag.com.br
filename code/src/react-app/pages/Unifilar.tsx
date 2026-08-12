@@ -8,7 +8,7 @@ export default function Unifilar() {
       {/* Background — foto contida: blur + vinheta para o diagrama dominar o palco */}
       <div
         className="fixed inset-0 bg-cover bg-center scale-105"
-        style={{ backgroundImage: 'url(/api/files/lp-hero-panels.png)', filter: 'blur(6px) brightness(0.6)' }}
+        style={{ backgroundImage: 'url(/api/files/real-barramentos-fabrica.jpg)', filter: 'blur(6px) brightness(0.6)' }}
       />
       <div
         className="fixed inset-0"
