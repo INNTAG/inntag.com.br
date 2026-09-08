@@ -426,7 +426,7 @@ export default function ConfigEmpresas() {
   const handleServiceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProject) return;
-    const url = editingService ? `/api/admin/services/${editingService.id}` : '/api/admin/services';
+    const url = editingService ? `/api/admin/project-services/${editingService.id}` : '/api/admin/project-services';
     const body = editingService ? serviceForm : { ...serviceForm, project_id: selectedProject.id };
     await fetch(url, { method: editingService ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(body) });
     setShowServiceModal(false);
@@ -437,7 +437,7 @@ export default function ConfigEmpresas() {
 
   const handleDeleteService = async (id: number) => {
     if (!confirm('Excluir serviço e todos os documentos?')) return;
-    await fetch(`/api/admin/services/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
+    await fetch(`/api/admin/project-services/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
     if (selectedService?.id === id) { setSelectedService(null); setServiceDocuments([]); }
     if (selectedProject) {
       const res = await fetch(`/api/admin/projects/${selectedProject.id}/services`, { headers: { Authorization: `Bearer ${getToken()}` } });
@@ -448,7 +448,7 @@ export default function ConfigEmpresas() {
   const selectService = async (service: Service) => {
     setSelectedService(service);
     try {
-      const res = await fetch(`/api/admin/services/${service.id}/documents`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch(`/api/admin/project-services/${service.id}/documents`, { headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.ok) setServiceDocuments(await res.json());
       else setServiceDocuments([]);
     } catch { setServiceDocuments([]); }
@@ -461,8 +461,8 @@ export default function ConfigEmpresas() {
     formData.append('file', e.target.files[0]);
     formData.append('category', docCategory);
     formData.append('is_client_visible', docClientVisible ? '1' : '0');
-    await fetch(`/api/admin/services/${selectedService.id}/documents`, { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` }, body: formData });
-    const res = await fetch(`/api/admin/services/${selectedService.id}/documents`, { headers: { Authorization: `Bearer ${getToken()}` } });
+    await fetch(`/api/admin/project-services/${selectedService.id}/documents`, { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` }, body: formData });
+    const res = await fetch(`/api/admin/project-services/${selectedService.id}/documents`, { headers: { Authorization: `Bearer ${getToken()}` } });
     if (res.ok) setServiceDocuments(await res.json());
     setUploadingServiceDoc(false);
     e.target.value = '';
@@ -472,7 +472,7 @@ export default function ConfigEmpresas() {
     if (!confirm('Excluir documento?')) return;
     await fetch(`/api/admin/service-documents/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
     if (selectedService) {
-      const res = await fetch(`/api/admin/services/${selectedService.id}/documents`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch(`/api/admin/project-services/${selectedService.id}/documents`, { headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.ok) setServiceDocuments(await res.json());
     }
   };
@@ -480,7 +480,7 @@ export default function ConfigEmpresas() {
   const toggleServiceDocVisibility = async (doc: ServiceDocument) => {
     await fetch(`/api/admin/service-documents/${doc.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` }, body: JSON.stringify({ is_client_visible: doc.is_client_visible ? 0 : 1, category: doc.category, notes: doc.notes }) });
     if (selectedService) {
-      const res = await fetch(`/api/admin/services/${selectedService.id}/documents`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = await fetch(`/api/admin/project-services/${selectedService.id}/documents`, { headers: { Authorization: `Bearer ${getToken()}` } });
       if (res.ok) setServiceDocuments(await res.json());
     }
   };

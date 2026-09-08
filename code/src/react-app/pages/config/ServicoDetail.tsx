@@ -87,12 +87,12 @@ export default function ServicoDetail() {
   const fetchServiceData = async () => {
     try {
       // Fetch service
-      const serviceRes = await fetch(`/api/admin/services/${serviceId}`);
+      const serviceRes = await fetch(`/api/admin/project-services/${serviceId}`);
       const serviceData = await serviceRes.json();
       setService(serviceData);
 
       // Fetch documents
-      const docsRes = await fetch(`/api/admin/services/${serviceId}/documents`);
+      const docsRes = await fetch(`/api/admin/project-services/${serviceId}/documents`);
       const docsData = await docsRes.json();
       setDocuments(Array.isArray(docsData) ? docsData : []);
 

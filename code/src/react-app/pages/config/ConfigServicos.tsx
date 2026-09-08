@@ -30,9 +30,12 @@ export default function ConfigServicos() {
   });
   const [error, setError] = useState('');
 
+  const token = sessionStorage.getItem('admin_session');
+  const headers = { 'Authorization': `Bearer ${token}` };
+
   const fetchServices = async () => {
     try {
-      const res = await fetch('/api/admin/services');
+      const res = await fetch('/api/admin/services', { headers });
       const data = await res.json();
       setServices(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -104,7 +107,7 @@ export default function ConfigServicos() {
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
           slug: form.slug || generateSlug(form.title),
@@ -132,7 +135,7 @@ export default function ConfigServicos() {
     if (!confirm('Deseja excluir este serviço?')) return;
 
     try {
-      await fetch(`/api/admin/services/${id}`, { method: 'DELETE' });
+      await fetch(`/api/admin/services/${id}`, { method: 'DELETE', headers });
       fetchServices();
     } catch (err) {
       console.error(err);

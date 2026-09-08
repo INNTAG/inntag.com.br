@@ -59,6 +59,22 @@ async function createAdminSession(db: any, token: string, email: string, name: s
   ).bind(token, email, name, permissions, expiresAt).run();
 }
 
+// Remove um objeto do R2 com segurança.
+// Assets compartilhados do site (logos, fotos da fábrica) ficam na RAIZ do bucket e são
+// referenciados por várias telas/backgrounds. Só apagamos chaves dentro de uma "pasta"
+// (ex.: products/12/..., machines/3/..., backgrounds/...), nunca um asset global —
+// senão trocar a foto de um produto derruba a imagem do site inteiro.
+async function safeDeleteAsset(bucket: any, key: string | null | undefined) {
+  if (!key) return;
+  const clean = String(key).replace('/api/files/', '');
+  if (!clean.includes('/')) return; // asset compartilhado na raiz — preservar
+  try {
+    await bucket.delete(clean);
+  } catch {
+    /* falha ao apagar não pode quebrar a operação principal */
+  }
+}
+
 // Helper to delete session from database
 async function deleteAdminSession(db: any, token: string) {
   await db.prepare("DELETE FROM admin_sessions WHERE token = ?").bind(token).run();
@@ -431,7 +447,7 @@ app.delete("/api/admin/clients/:id", adminMiddleware, async (c) => {
   // Delete logo from R2 if exists
   const client = await c.env.DB.prepare("SELECT logo_key FROM clients WHERE id = ?").bind(id).first();
   if (client?.logo_key) {
-    await c.env.R2_BUCKET.delete(client.logo_key as string);
+    await safeDeleteAsset(c.env.R2_BUCKET, client.logo_key as string);
   }
   await c.env.DB.prepare("DELETE FROM clients WHERE id = ?").bind(id).run();
   return c.json({ success: true });
@@ -450,7 +466,7 @@ app.post("/api/admin/clients/:id/logo", adminMiddleware, async (c) => {
   // Delete old logo if exists
   const client = await c.env.DB.prepare("SELECT logo_key FROM clients WHERE id = ?").bind(clientId).first();
   if (client?.logo_key) {
-    await c.env.R2_BUCKET.delete(client.logo_key as string);
+    await safeDeleteAsset(c.env.R2_BUCKET, client.logo_key as string);
   }
 
   const fileKey = `clients/${clientId}/${Date.now()}-${file.name}`;
@@ -771,7 +787,7 @@ app.delete("/api/admin/projects/:id", adminMiddleware, async (c) => {
   ).bind(id).all();
   
   for (const file of files) {
-    await c.env.R2_BUCKET.delete(file.file_key as string);
+    await safeDeleteAsset(c.env.R2_BUCKET, file.file_key as string);
   }
   
   await c.env.DB.prepare("DELETE FROM project_files WHERE project_id = ?").bind(id).run();
@@ -819,7 +835,7 @@ app.delete("/api/admin/files/:id", adminMiddleware, async (c) => {
   ).bind(id).first();
 
   if (file) {
-    await c.env.R2_BUCKET.delete(file.file_key as string);
+    await safeDeleteAsset(c.env.R2_BUCKET, file.file_key as string);
     await c.env.DB.prepare("DELETE FROM project_files WHERE id = ?").bind(id).run();
   }
 
@@ -954,7 +970,7 @@ app.delete("/api/admin/panels/:id", adminMiddleware, async (c) => {
     "SELECT file_key FROM panel_documents WHERE panel_id = ?"
   ).bind(id).all();
   for (const doc of docs) {
-    await c.env.R2_BUCKET.delete(doc.file_key as string);
+    await safeDeleteAsset(c.env.R2_BUCKET, doc.file_key as string);
   }
   await c.env.DB.prepare("DELETE FROM panel_documents WHERE panel_id = ?").bind(id).run();
   // Delete associated schedule tasks
@@ -1005,7 +1021,7 @@ app.delete("/api/admin/panel-documents/:id", adminMiddleware, async (c) => {
   const id = c.req.param("id");
   const doc = await c.env.DB.prepare("SELECT * FROM panel_documents WHERE id = ?").bind(id).first();
   if (doc) {
-    await c.env.R2_BUCKET.delete(doc.file_key as string);
+    await safeDeleteAsset(c.env.R2_BUCKET, doc.file_key as string);
     await c.env.DB.prepare("DELETE FROM panel_documents WHERE id = ?").bind(id).run();
   }
   return c.json({ success: true });
@@ -1021,7 +1037,15 @@ app.get("/api/admin/projects/:id/services", adminMiddleware, async (c) => {
   return c.json(results);
 });
 
-app.post("/api/admin/services", adminMiddleware, async (c) => {
+// Get single project service (OS) — usado pela tela de detalhe do serviço do projeto
+app.get("/api/admin/project-services/:id", adminMiddleware, async (c) => {
+  const id = c.req.param("id");
+  const service = await c.env.DB.prepare("SELECT * FROM project_services WHERE id = ?").bind(id).first();
+  if (!service) return c.json({ error: "Serviço não encontrado" }, 404);
+  return c.json(service);
+});
+
+app.post("/api/admin/project-services", adminMiddleware, async (c) => {
   const body = await c.req.json();
   const result = await c.env.DB.prepare(
     `INSERT INTO project_services (project_id, os_number, description, status, start_date, end_date, tipo_servico, responsavel, responsavel_telefone, responsavel_email, prioridade, valor, horas_trabalhadas, equipamento, local, observacoes, proxima_manutencao) 
@@ -1068,7 +1092,7 @@ app.post("/api/admin/services", adminMiddleware, async (c) => {
   return c.json(result);
 });
 
-app.put("/api/admin/services/:id", adminMiddleware, async (c) => {
+app.put("/api/admin/project-services/:id", adminMiddleware, async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json();
   const result = await c.env.DB.prepare(
@@ -1083,14 +1107,14 @@ app.put("/api/admin/services/:id", adminMiddleware, async (c) => {
   return c.json(result);
 });
 
-app.delete("/api/admin/services/:id", adminMiddleware, async (c) => {
+app.delete("/api/admin/project-services/:id", adminMiddleware, async (c) => {
   const id = c.req.param("id");
   // Delete associated documents from R2
   const { results: docs } = await c.env.DB.prepare(
     "SELECT file_key FROM service_documents WHERE service_id = ?"
   ).bind(id).all();
   for (const doc of docs) {
-    await c.env.R2_BUCKET.delete(doc.file_key as string);
+    await safeDeleteAsset(c.env.R2_BUCKET, doc.file_key as string);
   }
   await c.env.DB.prepare("DELETE FROM service_documents WHERE service_id = ?").bind(id).run();
   // Delete associated schedule tasks
@@ -1100,7 +1124,7 @@ app.delete("/api/admin/services/:id", adminMiddleware, async (c) => {
 });
 
 // Service Documents with access control
-app.get("/api/admin/services/:id/documents", adminMiddleware, async (c) => {
+app.get("/api/admin/project-services/:id/documents", adminMiddleware, async (c) => {
   const serviceId = c.req.param("id");
   const { results } = await c.env.DB.prepare(
     "SELECT * FROM service_documents WHERE service_id = ? ORDER BY category, created_at DESC"
@@ -1108,7 +1132,7 @@ app.get("/api/admin/services/:id/documents", adminMiddleware, async (c) => {
   return c.json(results);
 });
 
-app.post("/api/admin/services/:id/documents", adminMiddleware, async (c) => {
+app.post("/api/admin/project-services/:id/documents", adminMiddleware, async (c) => {
   const serviceId = c.req.param("id");
   const formData = await c.req.formData();
   const file = formData.get("file") as File;
@@ -1142,7 +1166,7 @@ app.delete("/api/admin/service-documents/:id", adminMiddleware, async (c) => {
   const id = c.req.param("id");
   const doc = await c.env.DB.prepare("SELECT * FROM service_documents WHERE id = ?").bind(id).first();
   if (doc) {
-    await c.env.R2_BUCKET.delete(doc.file_key as string);
+    await safeDeleteAsset(c.env.R2_BUCKET, doc.file_key as string);
     await c.env.DB.prepare("DELETE FROM service_documents WHERE id = ?").bind(id).run();
   }
   return c.json({ success: true });
@@ -1736,14 +1760,15 @@ app.put("/api/admin/products/:id", adminMiddleware, async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json();
   const result = await c.env.DB.prepare(
-    "UPDATE products SET slug = ?, title = ?, subtitle = ?, short_description = ?, full_description = ?, image_key = ?, display_order = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *"
+    // image_key so muda quando enviado (COALESCE) — salvar o formulario nao pode apagar a foto
+    "UPDATE products SET slug = ?, title = ?, subtitle = ?, short_description = ?, full_description = ?, image_key = COALESCE(?, image_key), display_order = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? RETURNING *"
   ).bind(
     body.slug,
     body.title,
     body.subtitle || null,
     body.short_description || null,
     body.full_description || null,
-    body.image_key || null,
+    body.image_key ?? null,
     body.display_order || 0,
     body.is_active ? 1 : 0,
     id
@@ -1759,14 +1784,14 @@ app.delete("/api/admin/products/:id", adminMiddleware, async (c) => {
     "SELECT image_key FROM product_gallery WHERE product_id = ?"
   ).bind(id).all();
   for (const img of gallery) {
-    if (img.image_key) await c.env.R2_BUCKET.delete(img.image_key as string);
+    if (img.image_key) await safeDeleteAsset(c.env.R2_BUCKET, img.image_key as string);
   }
   
   const { results: docs } = await c.env.DB.prepare(
     "SELECT file_key FROM product_docs WHERE product_id = ? AND file_key IS NOT NULL"
   ).bind(id).all();
   for (const doc of docs) {
-    if (doc.file_key) await c.env.R2_BUCKET.delete(doc.file_key as string);
+    if (doc.file_key) await safeDeleteAsset(c.env.R2_BUCKET, doc.file_key as string);
   }
   
   await c.env.DB.prepare("DELETE FROM product_gallery WHERE product_id = ?").bind(id).run();
@@ -1855,7 +1880,7 @@ app.delete("/api/admin/products/docs/:docId", adminMiddleware, async (c) => {
   const docId = c.req.param("docId");
   const doc = await c.env.DB.prepare("SELECT file_key FROM product_docs WHERE id = ?").bind(docId).first();
   if (doc?.file_key) {
-    await c.env.R2_BUCKET.delete(doc.file_key as string);
+    await safeDeleteAsset(c.env.R2_BUCKET, doc.file_key as string);
   }
   await c.env.DB.prepare("DELETE FROM product_docs WHERE id = ?").bind(docId).run();
   return c.json({ success: true });
@@ -1887,7 +1912,7 @@ app.delete("/api/admin/products/gallery/:imageId", adminMiddleware, async (c) =>
   const imageId = c.req.param("imageId");
   const img = await c.env.DB.prepare("SELECT image_key FROM product_gallery WHERE id = ?").bind(imageId).first();
   if (img?.image_key) {
-    await c.env.R2_BUCKET.delete(img.image_key as string);
+    await safeDeleteAsset(c.env.R2_BUCKET, img.image_key as string);
   }
   await c.env.DB.prepare("DELETE FROM product_gallery WHERE id = ?").bind(imageId).run();
   return c.json({ success: true });
@@ -1906,7 +1931,7 @@ app.post("/api/admin/products/:id/image", adminMiddleware, async (c) => {
   // Delete old image if exists
   const product = await c.env.DB.prepare("SELECT image_key FROM products WHERE id = ?").bind(productId).first();
   if (product?.image_key) {
-    await c.env.R2_BUCKET.delete(product.image_key as string);
+    await safeDeleteAsset(c.env.R2_BUCKET, product.image_key as string);
   }
 
   const imageKey = `products/${productId}/${Date.now()}-${file.name}`;
@@ -1983,7 +2008,7 @@ app.delete("/api/admin/machines/:id", adminMiddleware, async (c) => {
   // Delete image from R2 if exists
   const machine = await c.env.DB.prepare("SELECT image_key FROM machines WHERE id = ?").bind(id).first() as { image_key: string | null } | null;
   if (machine?.image_key) {
-    await c.env.R2_BUCKET.delete(machine.image_key);
+    await safeDeleteAsset(c.env.R2_BUCKET, machine.image_key);
   }
   
   await c.env.DB.prepare("DELETE FROM machines WHERE id = ?").bind(id).run();
@@ -2001,7 +2026,7 @@ app.post("/api/admin/machines/:id/image", adminMiddleware, async (c) => {
   // Delete old image if exists
   const machine = await c.env.DB.prepare("SELECT image_key FROM machines WHERE id = ?").bind(machineId).first() as { image_key: string | null } | null;
   if (machine?.image_key) {
-    await c.env.R2_BUCKET.delete(machine.image_key);
+    await safeDeleteAsset(c.env.R2_BUCKET, machine.image_key);
   }
   
   const imageKey = `machines/${machineId}/${Date.now()}-${file.name}`;
@@ -2231,8 +2256,8 @@ app.delete("/api/admin/articles/:id", adminMiddleware, async (c) => {
   
   // Delete image from R2 if exists
   const article = await c.env.DB.prepare("SELECT image_key, og_image_key FROM articles WHERE id = ?").bind(id).first() as any;
-  if (article?.image_key) await c.env.R2_BUCKET.delete(article.image_key);
-  if (article?.og_image_key) await c.env.R2_BUCKET.delete(article.og_image_key);
+  if (article?.image_key) await safeDeleteAsset(c.env.R2_BUCKET, article.image_key);
+  if (article?.og_image_key) await safeDeleteAsset(c.env.R2_BUCKET, article.og_image_key);
   
   await c.env.DB.prepare("DELETE FROM article_tags WHERE article_id = ?").bind(id).run();
   await c.env.DB.prepare("DELETE FROM articles WHERE id = ?").bind(id).run();
@@ -5163,7 +5188,7 @@ app.delete("/api/admin/timeline/photos/:photoId", adminMiddleware, async (c) => 
   if (photo?.file_key) {
     const key = photo.file_key.replace('/api/files/', '');
     try {
-      await c.env.R2_BUCKET.delete(key);
+      await safeDeleteAsset(c.env.R2_BUCKET, key);
     } catch (e) {
       // Ignore R2 delete errors
     }
