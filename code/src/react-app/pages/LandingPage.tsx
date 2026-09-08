@@ -12,19 +12,19 @@ const ASSET_BASE = '/api/files';
 // Vertical-based images (PAINÉIS, SERVIÇOS, MÁQUINAS) — somente fotos reais da fábrica/campo
 const VERTICAL_HERO_IMAGES = {
   paineis: [
-    `${ASSET_BASE}/hero-paineis-mt.jpg`,            // Painéis MT reais
-    `${ASSET_BASE}/real-paineis-xgear.jpg`,         // Painéis X-Gear reais
-    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,   // Barramentos na fábrica
-    `${ASSET_BASE}/real-tc-vermelho.jpg`,           // TC em bancada
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,            // Painéis MT reais
+    `${ASSET_BASE}/paineis-linha-fabrica.jpg`,         // Painéis X-Gear reais
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,   // Barramentos na fábrica
+    `${ASSET_BASE}/maquina-motor.jpg`,           // TC em bancada
   ],
   field_service: [
     `${ASSET_BASE}/servico-subestacao.webp`,        // Serviço em subestação (real)
-    `${ASSET_BASE}/real-disjuntor-abw.jpg`,         // Disjuntor em manutenção
-    `${ASSET_BASE}/hero-paineis-mt.jpg`,            // Painéis MT reais
+    `${ASSET_BASE}/servico-subestacao.webp`,         // Disjuntor em manutenção
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,            // Painéis MT reais
   ],
   maquinas: [
     `${ASSET_BASE}/maquina-motor.jpg`,              // Motor industrial real
-    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,   // Fábrica
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,   // Fábrica
   ],
 };
 
@@ -32,40 +32,40 @@ const VERTICAL_HERO_IMAGES = {
 const INDUSTRY_HERO_IMAGES = {
   petrochemical: [
     `${ASSET_BASE}/servico-subestacao.webp`,
-    `${ASSET_BASE}/hero-paineis-mt.jpg`,
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,
   ],
   mining: [
     `${ASSET_BASE}/maquina-motor.jpg`,
-    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,
   ],
   steel: [
-    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,
-    `${ASSET_BASE}/hero-paineis-mt.jpg`,
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,
   ],
   port: [
     `${ASSET_BASE}/maquina-motor.jpg`,
-    `${ASSET_BASE}/real-paineis-xgear.jpg`,
+    `${ASSET_BASE}/paineis-linha-fabrica.jpg`,
   ],
   automotive: [
-    `${ASSET_BASE}/real-paineis-xgear.jpg`,
-    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,
+    `${ASSET_BASE}/paineis-linha-fabrica.jpg`,
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,
   ],
   agro: [
     `${ASSET_BASE}/servico-subestacao.webp`,
-    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,
   ],
   food: [
-    `${ASSET_BASE}/real-paineis-xgear.jpg`,
-    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,
+    `${ASSET_BASE}/paineis-linha-fabrica.jpg`,
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,
   ],
   energy: [
     `${ASSET_BASE}/servico-subestacao.webp`,
-    `${ASSET_BASE}/hero-paineis-mt.jpg`,
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,
   ],
   default: [
-    `${ASSET_BASE}/hero-paineis-mt.jpg`,
-    `${ASSET_BASE}/real-barramentos-fabrica.jpg`,
-    `${ASSET_BASE}/real-paineis-xgear.jpg`,
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,
+    `${ASSET_BASE}/hero-paineis-fabrica.jpg`,
+    `${ASSET_BASE}/paineis-linha-fabrica.jpg`,
   ],
 };
 

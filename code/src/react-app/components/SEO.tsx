@@ -21,7 +21,7 @@ interface SEOProps {
 }
 
 const BASE_URL = 'https://www.inntag.com.br';
-const DEFAULT_IMAGE = '/api/files/hero-paineis-mt.jpg';
+const DEFAULT_IMAGE = '/api/files/hero-paineis-fabrica.jpg';
 const SITE_NAME = 'Grupo INNTAG';
 
 // Default language alternates
@@ -144,7 +144,7 @@ export const schemas = {
     "name": "Grupo INNTAG",
     "description": "Soluções completas em energia solar, painéis elétricos, máquinas rotativas e serviços de manutenção elétrica.",
     "url": BASE_URL,
-    "logo": "/api/files/inntag-logo.png",
+    "logo": "/api/files/logo-inntag.png",
     "foundingDate": "2009-03-16",
     "address": {
       "@type": "PostalAddress",
@@ -254,7 +254,7 @@ export const schemas = {
       "name": "Grupo INNTAG",
       "logo": {
         "@type": "ImageObject",
-        "url": "/api/files/inntag-logo.png"
+        "url": "/api/files/logo-inntag.png"
       }
     }
   }),

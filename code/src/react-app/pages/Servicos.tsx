@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Navigation } from '@/react-app/components/Navigation';
 import { Footer } from '@/react-app/components/ContactSection';
@@ -7,14 +8,14 @@ import { useBackgrounds } from '@/react-app/hooks/useBackgrounds';
 import { getCompanyAge } from '@/react-app/utils/companyAge';
 import { ArrowUpRight, ArrowLeft, CheckCircle2, Clock, Shield, Wrench } from 'lucide-react';
 
-const SERVICOS = [
+const SERVICOS_FALLBACK = [
   {
     slug: 'manutencao-preventiva',
     title: 'Manutenção Preventiva',
     subtitle: 'Programa de manutenção programada',
     shortDesc: 'Garantimos a máxima disponibilidade dos seus ativos elétricos com programas de manutenção estruturados.',
     description: 'Programa estruturado de manutenção preventiva que garante a disponibilidade dos seus ativos elétricos e previne paradas não programadas. Nossa metodologia baseada em análise preditiva identifica problemas antes que se tornem falhas críticas.',
-    image: '/api/files/real-disjuntor-abw.jpg',
+    image: '/api/files/servico-subestacao.webp',
     features: [
       'Análise termográfica de painéis e conexões',
       'Testes de isolamento e continuidade',
@@ -35,7 +36,7 @@ const SERVICOS = [
     subtitle: 'Atendimento emergencial rápido',
     shortDesc: 'Equipe de plantão disponível para atendimento de emergências com resposta rápida.',
     description: 'Equipe de plantão para atendimento de emergências. Nossa estrutura permite resposta rápida e diagnóstico preciso, minimizando o tempo de parada e os prejuízos operacionais.',
-    image: '/api/files/real-barramentos-fabrica.jpg',
+    image: '/api/files/hero-paineis-fabrica.jpg',
     features: [
       'Plantão técnico dedicado',
       'Diagnóstico remoto inicial',
@@ -56,7 +57,7 @@ const SERVICOS = [
     subtitle: 'Revisão completa durante paradas',
     shortDesc: 'Aproveitamos paradas programadas para garantir equipamentos 100% operacionais na próxima safra.',
     description: 'Aproveitamos as paradas programadas da sua planta para realizar revisões completas nos equipamentos elétricos, garantindo a próxima safra sem surpresas. Planejamento detalhado e execução em tempo recorde.',
-    image: '/api/files/real-paineis-xgear.jpg',
+    image: '/api/files/paineis-linha-fabrica.jpg',
     features: [
       'Planejamento prévio detalhado',
       'Mobilização de equipe dedicada',
@@ -94,7 +95,60 @@ const SERVICOS = [
   },
 ];
 
-function ServiceDetail({ servico }: { servico: typeof SERVICOS[0] }) {
+type Servico = typeof SERVICOS_FALLBACK[0];
+
+// O conteudo desta pagina e gerenciado no painel (Configuracoes > Servicos).
+// A lista fixa acima so entra em cena se a API nao devolver nada.
+// A tabela de servicos nao guarda beneficios, entao usamos os do conteudo fixo
+// quando o slug coincide e, fora isso, os beneficios institucionais abaixo.
+const BENEFICIOS_PADRAO = [
+  { icon: Clock, title: 'Agilidade', desc: 'Equipe mobilizada com rapidez' },
+  { icon: Shield, title: 'Segurança', desc: 'Equipe certificada NR-10 e NR-35' },
+  { icon: Wrench, title: 'Especialização', desc: 'Técnicos com experiência industrial' },
+];
+
+function normalizarServico(s: any): Servico {
+  const fixo = SERVICOS_FALLBACK.find(f => f.slug === s.slug);
+  const lista = String(s.features || '')
+    .split(/\r?\n/)
+    .map((linha: string) => linha.trim())
+    .filter(Boolean);
+  return {
+    slug: s.slug,
+    title: s.title,
+    subtitle: s.subtitle || '',
+    // o subtitulo ja aparece como categoria no card — aqui vai um resumo da descricao
+    shortDesc: fixo?.shortDesc || String(s.description || '').slice(0, 160),
+    description: s.description || '',
+    image: s.image_url || fixo?.image || ASSETS.servicesMaintenance,
+    features: lista.length ? lista : (fixo?.features || []),
+    benefits: fixo?.benefits || BENEFICIOS_PADRAO,
+  };
+}
+
+function useServicos() {
+  const [lista, setLista] = useState<Servico[]>([]);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    let ativo = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/public/services');
+        const dados = res.ok ? await res.json() : [];
+        if (ativo) setLista(Array.isArray(dados) && dados.length ? dados.map(normalizarServico) : SERVICOS_FALLBACK);
+      } catch {
+        if (ativo) setLista(SERVICOS_FALLBACK);
+      }
+      if (ativo) setCarregando(false);
+    })();
+    return () => { ativo = false; };
+  }, []);
+
+  return { lista, carregando };
+}
+
+function ServiceDetail({ servico }: { servico: Servico }) {
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
@@ -218,11 +272,21 @@ function ServiceDetail({ servico }: { servico: typeof SERVICOS[0] }) {
 export default function ServicosPage() {
   const { slug } = useParams();
   const { getBackground, loading: bgLoading } = useBackgrounds();
+  const { lista: servicos, carregando } = useServicos();
 
   // If a specific service is selected
   if (slug) {
-    const servico = SERVICOS.find(s => s.slug === slug);
+    const servico = servicos.find(s => s.slug === slug);
     if (!servico) {
+      if (carregando) {
+        return (
+          <div className="min-h-screen bg-white">
+            <Navigation lightBackground />
+            <div className="pt-40 pb-20 text-center text-neutral-500">Carregando...</div>
+            <Footer />
+          </div>
+        );
+      }
       return (
         <div className="min-h-screen bg-white">
           <Navigation lightBackground />
@@ -253,7 +317,7 @@ export default function ServicosPage() {
         canonical="/servicos"
         schema={[
           schemas.breadcrumb([{ name: 'Home', url: '/' }, { name: 'Serviços', url: '/servicos' }]),
-          ...SERVICOS.map(s => schemas.service(s.title, s.shortDesc, `/servicos/${s.slug}`))
+          ...servicos.map(s => schemas.service(s.title, s.shortDesc, `/servicos/${s.slug}`))
         ]}
       />
       <Navigation />
@@ -327,7 +391,7 @@ export default function ServicosPage() {
           </div>
           
           <div className="grid md:grid-cols-2 gap-6">
-            {SERVICOS.map((servico) => (
+            {servicos.map((servico) => (
               <Link
                 key={servico.slug}
                 to={`/servicos/${servico.slug}`}

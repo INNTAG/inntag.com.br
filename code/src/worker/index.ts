@@ -4382,6 +4382,34 @@ app.get("/api/public/products/:slug", async (c) => {
 });
 
 // Get featured projects
+// Public machines API — a pagina /maquinas le daqui (conteudo gerenciado pelo painel)
+app.get("/api/public/machines", async (c) => {
+  const { results } = await c.env.DB.prepare(
+    "SELECT * FROM machines WHERE is_active = 1 ORDER BY display_order ASC, title ASC"
+  ).all();
+  return c.json(results || []);
+});
+
+app.get("/api/public/machines/:slug", async (c) => {
+  const slug = c.req.param("slug");
+  const machine = await c.env.DB.prepare(
+    "SELECT * FROM machines WHERE slug = ? AND is_active = 1"
+  ).bind(slug).first();
+  if (!machine) return c.json({ error: "Maquina nao encontrada" }, 404);
+
+  const { results: features } = await c.env.DB.prepare(
+    "SELECT * FROM machine_features WHERE machine_id = ? ORDER BY display_order ASC"
+  ).bind(machine.id).all();
+  const { results: specs } = await c.env.DB.prepare(
+    "SELECT * FROM machine_specs WHERE machine_id = ? ORDER BY display_order ASC"
+  ).bind(machine.id).all();
+  const { results: benefits } = await c.env.DB.prepare(
+    "SELECT * FROM machine_benefits WHERE machine_id = ? ORDER BY display_order ASC"
+  ).bind(machine.id).all();
+
+  return c.json({ ...machine, features, specs, benefits });
+});
+
 app.get("/api/public/projects/featured", async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT p.*, c.name as client_name,

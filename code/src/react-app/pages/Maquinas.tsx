@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Navigation } from '@/react-app/components/Navigation';
 import { Footer } from '@/react-app/components/ContactSection';
@@ -6,7 +7,7 @@ import { ASSETS } from '@/react-app/data/content';
 import { useBackgrounds } from '@/react-app/hooks/useBackgrounds';
 import { ArrowUpRight, ArrowLeft, CheckCircle2, Zap, Settings, Shield, Gauge, Factory, Anchor } from 'lucide-react';
 
-const MAQUINAS = [
+const MAQUINAS_FALLBACK = [
   {
     slug: 'motores-industriais',
     title: 'Motores Industriais',
@@ -113,7 +114,81 @@ const MAQUINAS = [
   },
 ];
 
-function MaquinaDetail({ maquina }: { maquina: typeof MAQUINAS[0] }) {
+type Maquina = typeof MAQUINAS_FALLBACK[0];
+
+// O conteudo desta pagina e gerenciado no painel (Configuracoes > Maquinas).
+// A lista fixa acima so entra em cena se a API nao devolver nada.
+const ICONES: Record<string, typeof Gauge> = { Gauge, Shield, Settings, Zap, Factory, Anchor };
+
+function urlDaImagem(chave?: string | null): string {
+  if (!chave) return ASSETS.machinesIndustrial;
+  if (chave.startsWith('http') || chave.startsWith('/')) return chave;
+  return `/api/files/${chave}`;
+}
+
+function normalizarMaquina(m: any): Maquina {
+  return {
+    slug: m.slug,
+    title: m.title,
+    subtitle: m.subtitle || '',
+    shortDesc: m.short_description || '',
+    description: m.full_description || m.short_description || '',
+    image: urlDaImagem(m.image_key),
+    features: (m.features || []).map((f: any) => f.feature_text),
+    benefits: (m.benefits || []).map((b: any) => ({
+      icon: ICONES[b.icon_name] || Settings,
+      title: b.benefit_title,
+      desc: b.benefit_description || '',
+    })),
+    specs: (m.specs || []).map((e: any) => ({ label: e.spec_label, value: e.spec_value })),
+  };
+}
+
+function useMaquinas(slug?: string) {
+  const [lista, setLista] = useState<Maquina[]>([]);
+  const [detalhe, setDetalhe] = useState<Maquina | null>(null);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    let ativo = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/public/machines');
+        const dados = res.ok ? await res.json() : [];
+        if (ativo) setLista(Array.isArray(dados) && dados.length ? dados.map(normalizarMaquina) : MAQUINAS_FALLBACK);
+      } catch {
+        if (ativo) setLista(MAQUINAS_FALLBACK);
+      }
+      if (ativo) setCarregando(false);
+    })();
+    return () => { ativo = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!slug) { setDetalhe(null); return; }
+    let ativo = true;
+    setCarregando(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/public/machines/${slug}`);
+        if (res.ok) {
+          const dado = await res.json();
+          if (ativo) { setDetalhe(normalizarMaquina(dado)); setCarregando(false); }
+          return;
+        }
+      } catch { /* cai no conteudo fixo */ }
+      if (ativo) {
+        setDetalhe(MAQUINAS_FALLBACK.find(m => m.slug === slug) || null);
+        setCarregando(false);
+      }
+    })();
+    return () => { ativo = false; };
+  }, [slug]);
+
+  return { lista, detalhe, carregando };
+}
+
+function MaquinaDetail({ maquina }: { maquina: Maquina }) {
   return (
     <div className="min-h-screen bg-white">
       <SEO
@@ -267,11 +342,21 @@ function MaquinaDetail({ maquina }: { maquina: typeof MAQUINAS[0] }) {
 export default function MaquinasPage() {
   const { slug } = useParams();
   const { getBackground, loading: bgLoading } = useBackgrounds();
+  const { lista: maquinas, detalhe, carregando } = useMaquinas(slug);
 
   // If a specific machine type is selected
   if (slug) {
-    const maquina = MAQUINAS.find(m => m.slug === slug);
+    const maquina = detalhe;
     if (!maquina) {
+      if (carregando) {
+        return (
+          <div className="min-h-screen bg-white">
+            <Navigation lightBackground />
+            <div className="pt-40 pb-20 text-center text-neutral-500">Carregando...</div>
+            <Footer />
+          </div>
+        );
+      }
       return (
         <div className="min-h-screen bg-white">
           <Navigation lightBackground />
@@ -419,7 +504,7 @@ export default function MaquinasPage() {
           </div>
           
           <div className="grid md:grid-cols-2 gap-6">
-            {MAQUINAS.map((maquina) => (
+            {maquinas.map((maquina) => (
               <Link
                 key={maquina.slug}
                 to={`/maquinas/${maquina.slug}`}
