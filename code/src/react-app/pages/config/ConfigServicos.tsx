@@ -30,6 +30,10 @@ export default function ConfigServicos() {
   });
   const [error, setError] = useState('');
 
+  const [arquivoFoto, setArquivoFoto] = useState<File | null>(null);
+  const [previaFoto, setPreviaFoto] = useState<string>('');
+  const [salvando, setSalvando] = useState(false);
+
   const token = sessionStorage.getItem('admin_session');
   const headers = { 'Authorization': `Bearer ${token}` };
 
@@ -69,6 +73,8 @@ export default function ConfigServicos() {
       is_active: true,
       display_order: services.length
     });
+    setArquivoFoto(null);
+    setPreviaFoto('');
     setShowModal(true);
     setError('');
   };
@@ -85,8 +91,38 @@ export default function ConfigServicos() {
       is_active: service.is_active === 1,
       display_order: service.display_order || 0
     });
+    setArquivoFoto(null);
+    setPreviaFoto('');
     setShowModal(true);
     setError('');
+  };
+
+  const escolherFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const arquivo = e.target.files?.[0];
+    if (!arquivo) return;
+    if (arquivo.size > 10 * 1024 * 1024) {
+      setError('Imagem muito grande. Máximo: 10MB');
+      e.target.value = '';
+      return;
+    }
+    setArquivoFoto(arquivo);
+    setPreviaFoto(URL.createObjectURL(arquivo));
+    setError('');
+  };
+
+  // O upload precisa do id do serviço, então roda depois de criar/atualizar.
+  const enviarFoto = async (servicoId: number) => {
+    const dados = new FormData();
+    dados.append('file', arquivoFoto as File);
+    const res = await fetch(`/api/admin/services/${servicoId}/image`, {
+      method: 'POST',
+      headers,
+      body: dados,
+    });
+    if (!res.ok) {
+      const erro = await res.json().catch(() => ({}));
+      throw new Error(erro.error || 'Erro ao enviar a foto');
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -98,6 +134,7 @@ export default function ConfigServicos() {
       return;
     }
 
+    setSalvando(true);
     try {
       const url = editingService 
         ? `/api/admin/services/${editingService.id}` 
@@ -122,12 +159,26 @@ export default function ConfigServicos() {
         return;
       }
 
+      if (arquivoFoto) {
+        const servicoId = editingService ? editingService.id : data?.id;
+        if (!servicoId) {
+          setError('Serviço salvo, mas não foi possível enviar a foto. Reabra o serviço e tente de novo.');
+          fetchServices();
+          return;
+        }
+        await enviarFoto(servicoId);
+      }
+
+      setArquivoFoto(null);
+      setPreviaFoto('');
       setShowModal(false);
       setEditingService(null);
       fetchServices();
     } catch (err) {
       console.error(err);
-      setError('Erro ao salvar serviço');
+      setError(err instanceof Error ? err.message : 'Erro ao salvar serviço');
+    } finally {
+      setSalvando(false);
     }
   };
 
@@ -295,14 +346,33 @@ export default function ConfigServicos() {
               </div>
 
               <div>
-                <label className="block text-sm text-neutral-600 mb-2">URL da Imagem</label>
-                <input
-                  type="url"
-                  value={form.image_url}
-                  onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full bg-white border border-neutral-300 rounded-xl px-4 py-3 text-neutral-900 focus:outline-none focus:border-orange-500"
-                />
+                <label className="block text-sm text-neutral-600 mb-2">Foto do serviço</label>
+                <div className="flex items-start gap-4">
+                  <div className="w-32 h-24 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 flex items-center justify-center shrink-0">
+                    {previaFoto || form.image_url ? (
+                      <img src={previaFoto || form.image_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-neutral-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-sm cursor-pointer transition-colors">
+                      <ImageIcon className="w-4 h-4" />
+                      {previaFoto ? 'Trocar foto escolhida' : 'Escolher foto'}
+                      <input type="file" accept="image/*" onChange={escolherFoto} className="hidden" />
+                    </label>
+                    <p className="text-xs text-neutral-500 mt-2">
+                      JPG ou PNG, até 10MB. A foto é enviada quando você salva o serviço.
+                    </p>
+                    <input
+                      type="url"
+                      value={form.image_url}
+                      onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                      placeholder="ou cole aqui o endereço de uma imagem"
+                      className="w-full mt-3 bg-white border border-neutral-300 rounded-xl px-4 py-2 text-sm text-neutral-900 focus:outline-none focus:border-orange-500"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -347,9 +417,10 @@ export default function ConfigServicos() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white transition-colors"
+                  disabled={salvando}
+                  className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white transition-colors"
                 >
-                  {editingService ? 'Salvar' : 'Criar Serviço'}
+                  {salvando ? 'Salvando...' : editingService ? 'Salvar' : 'Criar Serviço'}
                 </button>
               </div>
             </form>

@@ -2144,6 +2144,34 @@ app.put("/api/admin/services/:id", adminMiddleware, async (c) => {
   return c.json(result);
 });
 
+// Upload da foto do servico (mesma mecanica de produtos/maquinas).
+// A tabela guarda a URL pronta em image_url, entao devolvemos /api/files/<chave>.
+app.post("/api/admin/services/:id/image", adminMiddleware, async (c) => {
+  const serviceId = c.req.param("id");
+  const formData = await c.req.formData();
+  const file = formData.get("file") as File;
+
+  if (!file) return c.json({ error: "Nenhum arquivo enviado" }, 400);
+
+  const service = await c.env.DB.prepare("SELECT image_url FROM services WHERE id = ?").bind(serviceId).first() as { image_url: string | null } | null;
+  if (!service) return c.json({ error: "Servico nao encontrado" }, 404);
+
+  // safeDeleteAsset ignora chaves da raiz do bucket (assets compartilhados do site)
+  await safeDeleteAsset(c.env.R2_BUCKET, service.image_url);
+
+  const imageKey = `services/${serviceId}/${Date.now()}-${file.name}`;
+  await c.env.R2_BUCKET.put(imageKey, await file.arrayBuffer(), {
+    httpMetadata: { contentType: file.type },
+  });
+
+  const imageUrl = `/api/files/${imageKey}`;
+  await c.env.DB.prepare(
+    "UPDATE services SET image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+  ).bind(imageUrl, serviceId).run();
+
+  return c.json({ image_url: imageUrl });
+});
+
 // Delete service
 app.delete("/api/admin/services/:id", adminMiddleware, async (c) => {
   const id = c.req.param("id");
