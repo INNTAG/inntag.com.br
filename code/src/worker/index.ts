@@ -59,6 +59,22 @@ async function createAdminSession(db: any, token: string, email: string, name: s
   ).bind(token, email, name, permissions, expiresAt).run();
 }
 
+// Nome de arquivo seguro para a chave do R2 e para a URL publica.
+// Fotos vindas do celular chegam com espaco, acento, virgula e as vezes # ou %,
+// que quebram o link gerado (o # corta a URL e o % invalida o decode na leitura).
+// Guardamos a chave higienizada; o nome original continua sendo salvo no banco
+// nos casos em que ele e exibido para o usuario.
+function nomeSeguroDeArquivo(nome: string): string {
+  const limpo = (nome || 'arquivo')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9.\-_]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^[-.]+|[-.]+$/g, '');
+  const seguro = limpo || 'arquivo';
+  return seguro.length > 100 ? seguro.slice(-100).replace(/^[-.]+/, '') : seguro;
+}
+
 // Remove um objeto do R2 com segurança.
 // Assets compartilhados do site (logos, fotos da fábrica) ficam na RAIZ do bucket e são
 // referenciados por várias telas/backgrounds. Só apagamos chaves dentro de uma "pasta"
@@ -469,7 +485,7 @@ app.post("/api/admin/clients/:id/logo", adminMiddleware, async (c) => {
     await safeDeleteAsset(c.env.R2_BUCKET, client.logo_key as string);
   }
 
-  const fileKey = `clients/${clientId}/${Date.now()}-${file.name}`;
+  const fileKey = `clients/${clientId}/${Date.now()}-${nomeSeguroDeArquivo(file.name)}`;
   
   await c.env.R2_BUCKET.put(fileKey, file.stream(), {
     httpMetadata: { contentType: file.type },
@@ -815,7 +831,7 @@ app.post("/api/admin/projects/:id/files", adminMiddleware, async (c) => {
     return c.json({ error: "No file provided" }, 400);
   }
 
-  const fileKey = `projects/${projectId}/${Date.now()}-${file.name}`;
+  const fileKey = `projects/${projectId}/${Date.now()}-${nomeSeguroDeArquivo(file.name)}`;
   
   await c.env.R2_BUCKET.put(fileKey, file.stream(), {
     httpMetadata: { contentType: file.type },
@@ -846,13 +862,26 @@ app.delete("/api/admin/files/:id", adminMiddleware, async (c) => {
 app.get("/api/files/*", async (c) => {
   // Extract the key from the URL path after /api/files/
   const url = new URL(c.req.url);
-  const key = decodeURIComponent(url.pathname.replace("/api/files/", ""));
-  
+  const bruto = url.pathname.replace("/api/files/", "");
+
+  // Um nome com % malformado faz o decode lancar; nesse caso usamos o caminho cru.
+  let key = bruto;
+  try {
+    key = decodeURIComponent(bruto);
+  } catch {
+    key = bruto;
+  }
+
   if (!key) {
     return c.json({ error: "No file key provided" }, 400);
   }
-  
-  const object = await c.env.R2_BUCKET.get(key);
+
+  // Arquivos antigos foram gravados com o nome original (espacos, virgulas), entao
+  // tentamos a chave decodificada e, se nao existir, a forma crua.
+  let object = await c.env.R2_BUCKET.get(key);
+  if (!object && key !== bruto) {
+    object = await c.env.R2_BUCKET.get(bruto);
+  }
 
   if (!object) {
     console.log("File not found in R2:", key);
@@ -997,7 +1026,7 @@ app.post("/api/admin/panels/:id/documents", adminMiddleware, async (c) => {
 
   if (!file) return c.json({ error: "No file provided" }, 400);
 
-  const fileKey = `panels/${panelId}/${Date.now()}-${file.name}`;
+  const fileKey = `panels/${panelId}/${Date.now()}-${nomeSeguroDeArquivo(file.name)}`;
   await c.env.R2_BUCKET.put(fileKey, file.stream(), {
     httpMetadata: { contentType: file.type },
   });
@@ -1142,7 +1171,7 @@ app.post("/api/admin/project-services/:id/documents", adminMiddleware, async (c)
 
   if (!file) return c.json({ error: "No file provided" }, 400);
 
-  const fileKey = `services/${serviceId}/${category}/${Date.now()}-${file.name}`;
+  const fileKey = `services/${serviceId}/${category}/${Date.now()}-${nomeSeguroDeArquivo(file.name)}`;
   await c.env.R2_BUCKET.put(fileKey, file.stream(), {
     httpMetadata: { contentType: file.type },
   });
@@ -1864,7 +1893,7 @@ app.post("/api/admin/products/:id/docs", adminMiddleware, async (c) => {
 
   let fileKey = null;
   if (file) {
-    fileKey = `products/${productId}/docs/${Date.now()}-${file.name}`;
+    fileKey = `products/${productId}/docs/${Date.now()}-${nomeSeguroDeArquivo(file.name)}`;
     await c.env.R2_BUCKET.put(fileKey, file.stream(), {
       httpMetadata: { contentType: file.type },
     });
@@ -1897,7 +1926,7 @@ app.post("/api/admin/products/:id/gallery", adminMiddleware, async (c) => {
     return c.json({ error: "No file provided" }, 400);
   }
 
-  const imageKey = `products/${productId}/gallery/${Date.now()}-${file.name}`;
+  const imageKey = `products/${productId}/gallery/${Date.now()}-${nomeSeguroDeArquivo(file.name)}`;
   await c.env.R2_BUCKET.put(imageKey, file.stream(), {
     httpMetadata: { contentType: file.type },
   });
@@ -1934,7 +1963,7 @@ app.post("/api/admin/products/:id/image", adminMiddleware, async (c) => {
     await safeDeleteAsset(c.env.R2_BUCKET, product.image_key as string);
   }
 
-  const imageKey = `products/${productId}/${Date.now()}-${file.name}`;
+  const imageKey = `products/${productId}/${Date.now()}-${nomeSeguroDeArquivo(file.name)}`;
   await c.env.R2_BUCKET.put(imageKey, file.stream(), {
     httpMetadata: { contentType: file.type },
   });
@@ -2029,7 +2058,7 @@ app.post("/api/admin/machines/:id/image", adminMiddleware, async (c) => {
     await safeDeleteAsset(c.env.R2_BUCKET, machine.image_key);
   }
   
-  const imageKey = `machines/${machineId}/${Date.now()}-${file.name}`;
+  const imageKey = `machines/${machineId}/${Date.now()}-${nomeSeguroDeArquivo(file.name)}`;
   const buffer = await file.arrayBuffer();
   await c.env.R2_BUCKET.put(imageKey, buffer, { httpMetadata: { contentType: file.type } });
   
@@ -2159,7 +2188,7 @@ app.post("/api/admin/services/:id/image", adminMiddleware, async (c) => {
   // safeDeleteAsset ignora chaves da raiz do bucket (assets compartilhados do site)
   await safeDeleteAsset(c.env.R2_BUCKET, service.image_url);
 
-  const imageKey = `services/${serviceId}/${Date.now()}-${file.name}`;
+  const imageKey = `services/${serviceId}/${Date.now()}-${nomeSeguroDeArquivo(file.name)}`;
   await c.env.R2_BUCKET.put(imageKey, await file.arrayBuffer(), {
     httpMetadata: { contentType: file.type },
   });
@@ -2301,7 +2330,7 @@ app.post("/api/admin/articles/:id/image", adminMiddleware, async (c) => {
   
   if (!file) return c.json({ error: "No file provided" }, 400);
   
-  const imageKey = `articles/${articleId}/${type}-${Date.now()}-${file.name}`;
+  const imageKey = `articles/${articleId}/${type}-${Date.now()}-${nomeSeguroDeArquivo(file.name)}`;
   const buffer = await file.arrayBuffer();
   await c.env.R2_BUCKET.put(imageKey, buffer, { httpMetadata: { contentType: file.type } });
   
