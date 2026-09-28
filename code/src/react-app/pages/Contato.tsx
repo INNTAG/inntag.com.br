@@ -245,6 +245,18 @@ export default function ContatoPage() {
                       <option value="trabalhe">Trabalhe Conosco</option>
                       <option value="outro">Outro Assunto</option>
                     </select>
+                    {formData.subject === 'trabalhe' && (
+                      <div className="mt-3 rounded-xl border border-orange-300 bg-orange-50 px-4 py-3.5">
+                        <p className="text-sm text-neutral-800 font-medium">{CONTACT.careers.title}</p>
+                        <p className="text-sm text-neutral-600 mt-1 leading-relaxed">{CONTACT.careers.description}</p>
+                        <a
+                          href={CONTACT.careers.link}
+                          className="mt-3 inline-flex items-center h-10 px-4 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold transition-colors"
+                        >
+                          {CONTACT.careers.cta}
+                        </a>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-2">Mensagem *</label>

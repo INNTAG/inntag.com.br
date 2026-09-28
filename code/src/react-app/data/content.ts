@@ -240,9 +240,10 @@ export const CONTACT = {
   },
   
   careers: {
-    title: 'Trabalhe Conosco',
-    description: 'Buscamos talentos apaixonados por engenharia e inovação.',
-    email: 'rh@inntag.com.br',
+    title: 'Trabalhe na INNTAG',
+    description: 'Vagas abertas em engenharia, campo, produção e administrativo, com o processo inteiro pelo site.',
+    link: 'https://app.inntag.com.br/carreiras',
+    cta: 'Ver as vagas abertas',
   },
 };
 
@@ -263,7 +264,7 @@ export const FOOTER = {
   company_links: [
     { label: 'Quem Somos', href: '/portfolio' },
     { label: 'Projetos', href: '/portfolio' },
-    { label: 'Trabalhe Conosco', href: '/contato' },
+    { label: 'Trabalhe Conosco', href: 'https://app.inntag.com.br/carreiras' },
     { label: 'Contato', href: '/contato' },
   ],
   
