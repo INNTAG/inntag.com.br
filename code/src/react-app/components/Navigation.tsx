@@ -42,6 +42,14 @@ export function Navigation({ division, lightBackground = false }: NavigationProp
     setIsLangMenuOpen(false);
   }, [location.pathname]);
 
+  // Com o menu aberto, a página de trás não rola: o gesto fica com o menu.
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const anterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = anterior; };
+  }, [isMobileMenuOpen]);
+
   const currentLang = LANGUAGES.find(l => l.code === language);
 
   // Text color based on background and scroll state
@@ -161,11 +169,13 @@ export function Navigation({ division, lightBackground = false }: NavigationProp
 
       {/* Mobile Menu */}
       <div 
-        className={`fixed inset-0 z-40 bg-black transition-all duration-500 lg:hidden ${
+        className={`fixed inset-0 z-40 bg-black transition-all duration-500 lg:hidden overflow-y-auto overscroll-contain ${
           isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
         }`}
       >
-        <div className="flex flex-col items-center justify-center h-full gap-6 px-6">
+        {/* min-h-full + overflow-y-auto: centraliza quando cabe e rola quando não cabe
+            (9 itens em text-3xl passam da altura de um celular). */}
+        <div className="flex flex-col items-center justify-center min-h-full gap-6 px-6 pt-24 pb-12">
           {NAV_LINKS.map((link, i) => {
             const isActive = location.pathname === link.href;
             return (
