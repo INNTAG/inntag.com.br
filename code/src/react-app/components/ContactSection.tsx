@@ -316,7 +316,17 @@ export function Footer() {
 
       {/* Bottom Bar */}
       <div className="border-t border-background/10">
-        <div className="container-world py-4 md:py-6">
+        {/*
+          * A folga embaixo nao e respiro: e o espaco do botao do WhatsApp.
+          *
+          * Ele e fixo no canto inferior direito da JANELA, nao da pagina,
+          * entao quando alguem rola ate o fim ele pousa exatamente sobre o
+          * que estiver no canto da ultima faixa -- e cobria o D-U-N-S. Nao
+          * adianta empurrar para o lado: conteudo alinhado a direita sempre
+          * reencontra o botao, em qualquer largura de tela. O que resolve e
+          * tirar a ultima linha da faixa de 80px que o botao ocupa.
+          */}
+        <div className="container-world pt-4 pb-24 md:pt-6 md:pb-24">
           <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
             <p className="text-background/40 text-xs md:text-sm text-center md:text-left">
               {FOOTER.legal.copyright}
