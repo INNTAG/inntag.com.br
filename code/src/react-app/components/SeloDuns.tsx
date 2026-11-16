@@ -13,6 +13,13 @@ import { BadgeCheck } from 'lucide-react';
  * jurisdições diferentes -- a identidade cadastral da empresa -- e quem
  * procura um já está olhando para onde o outro está.
  *
+ * Fundo laranja sólido, a cor da marca, com letra branca. A primeira versão
+ * era uma cápsula quase da cor do fundo, com borda fina, e o problema dela
+ * não era o gosto: um bloco que se confunde com o fundo não é selo, é mais
+ * uma linha de texto do rodapé. Credencial precisa ser reconhecível como
+ * objeto à primeira olhada, e cor chapada é o que separa um selo de um
+ * parágrafo.
+ *
  * O selo é escrito com a tipografia e as cores deste site. A Dun &
  * Bradstreet tem um selo próprio, o "D-U-N-S Registered", que ela entrega
  * a quem conclui o programa dela e vem com endereço de verificação.
@@ -38,14 +45,14 @@ export default function SeloDuns({ className = '' }: { className?: string }) {
   return (
     <div
       title={`D-U-N-S Number do Grupo INNTAG: ${NUMERO}`}
-      className={`inline-flex items-center gap-2.5 rounded-full border border-background/15 bg-background/5 px-3.5 py-2 ${className}`}
+      className={`inline-flex items-center gap-2.5 rounded-full bg-accent px-4 py-2 ${className}`}
     >
-      <BadgeCheck size={16} className="text-accent shrink-0" aria-hidden="true" />
+      <BadgeCheck size={16} strokeWidth={2.25} className="text-accent-foreground shrink-0" aria-hidden="true" />
       <div className="leading-none">
-        <div className="text-[9px] uppercase tracking-[0.14em] text-background/40">
+        <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-accent-foreground/70">
           D-U-N-S<span className="align-super text-[7px]">®</span> Number
         </div>
-        <div className="mt-1 text-xs font-semibold tracking-[0.08em] text-background/80 tabular-nums">
+        <div className="mt-1 text-xs font-bold tracking-[0.08em] text-accent-foreground tabular-nums">
           {formatado}
         </div>
       </div>
