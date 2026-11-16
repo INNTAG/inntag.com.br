@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { useEffect, useRef, useState } from 'react';
 import { Mail, Phone, MapPin, Linkedin, Instagram, Facebook, ArrowRight } from 'lucide-react';
 import { CONTACT, FOOTER } from '../data/content';
+import SeloDuns from './SeloDuns';
 
 interface FooterContent {
   email: string;
@@ -316,13 +317,19 @@ export function Footer() {
       {/* Bottom Bar */}
       <div className="border-t border-background/10">
         <div className="container-world py-4 md:py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-2 md:gap-4">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
             <p className="text-background/40 text-xs md:text-sm text-center md:text-left">
               {FOOTER.legal.copyright}
             </p>
-            <p className="text-background/40 text-xs md:text-sm">
-              {contact.cnpj}
-            </p>
+            {/* CNPJ e D-U-N-S juntos: sao a mesma coisa em jurisdicoes
+                diferentes, e quem procura um ja esta olhando para onde o
+                outro esta. */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5">
+              <p className="text-background/40 text-xs md:text-sm">
+                {contact.cnpj}
+              </p>
+              <SeloDuns />
+            </div>
           </div>
         </div>
       </div>
