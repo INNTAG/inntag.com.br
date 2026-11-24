@@ -9,6 +9,10 @@ import ConfigLayout from "@/react-app/pages/config/ConfigLayout";
 // Páginas públicas (carregadas sob demanda — reduz o bundle inicial)
 const ProdutosPage = lazy(() => import("@/react-app/pages/Produtos"));
 const ServicosPage = lazy(() => import("@/react-app/pages/Servicos"));
+/* BESS tem página própria: gráficos interativos e roteiro de obra não cabem
+   no registro de serviço que o painel edita. Por isso a rota vem ANTES de
+   "/servicos/:slug" — senão o slug genérico a engole. */
+const ServicosBESSPage = lazy(() => import("@/react-app/pages/ServicosBESS"));
 const NotFoundPage = lazy(() => import("@/react-app/pages/NotFound"));
 const MaquinasPage = lazy(() => import("@/react-app/pages/Maquinas"));
 const ClientesPage = lazy(() => import("@/react-app/pages/Clientes"));
@@ -68,6 +72,7 @@ function AppContent() {
           <Route path="/produtos" element={<ProdutosPage />} />
           <Route path="/produtos/:slug" element={<ProdutosPage />} />
           <Route path="/servicos" element={<ServicosPage />} />
+          <Route path="/servicos/bess" element={<ServicosBESSPage />} />
           <Route path="/servicos/:slug" element={<ServicosPage />} />
           <Route path="/maquinas" element={<MaquinasPage />} />
           <Route path="/maquinas/:slug" element={<MaquinasPage />} />
